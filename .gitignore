@@ -9,19 +9,19 @@
 *.pch
 
 # Libraries
-*.lib
+#*.lib
 *.a
 *.la
 *.lo
 
 # Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
+#*.dll
+#*.so
+#*.so.*
+#*.dylib
 
 # Executables
-*.exe
+#*.exe
 *.out
 *.app
 *.i*86
@@ -30,3 +30,4 @@
 
 # Debug files
 *.dSYM/
+.build
