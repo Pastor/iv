@@ -39,7 +39,8 @@ echo  Generator: %generator%
 echo        CWD: %cwd%
 echo Downloader: %downloader%
 
-call :Depends
+rem call :Utils
+rem call :Depends
 rem exit /b
 
 rd /s /q %cwd%\.build\main
@@ -64,23 +65,29 @@ msbuild %cwd%\.build\main\main.sln /p:Platform=%vcplatform% /p:ReleaseBuild=true
 exit /b
 
 rem ==========================================
-:Depends
+:Utils
 
 echo Utils libtaties and programs
 rd /s /q %CWD%\.build\utils
 cmake -H%cwd%\utils -B%cwd%\.build\utils -G %generator% -DCMAKE_BUILD_TYPE=%buildtype%
 msbuild %cwd%\.build\utils\utils.sln /p:Platform=%vcplatform% /p:ReleaseBuild=true /p:Configuration=%buildtype%
+exit /b
+:Depends
 
 del /q %cwd%\.build\mongoose-master.zip
+del /q %cwd%\.build\hidapi-master.zip
 del /q %cwd%\.build\%sqlite_release%.zip
 
 %downloader% https://github.com/cesanta/mongoose/archive/master.zip        %cwd%\.build\mongoose-master.zip
+%downloader% https://github.com/signal11/hidapi/archive/master.zip         %cwd%\.build\hidapi-master.zip
 %downloader% https://www.sqlite.org/2016/%sqlite_release%.zip              %cwd%\.build\%sqlite_release%.zip
 
 rd /s /q %cwd%\.build\mongoose-master
+rd /s /q %cwd%\.build\hidapi-master
 rd /s /q %cwd%\.build\%sqlite_release%
 
 %unzipper% x %cwd%\.build\mongoose-master.zip           -o%cwd%\.build
+%unzipper% x %cwd%\.build\hidapi-master.zip             -o%cwd%\.build
 %unzipper% x %cwd%\.build\%sqlite_release%.zip          -o%cwd%\.build
 
 exit /b

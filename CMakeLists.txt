@@ -73,7 +73,8 @@ if (WIN32)
     if (MSVC)
         add_definitions(-D_CRT_SECURE_NO_WARNINGS)
         
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /wd4267 /wd4244 /wd4996")
+        set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   /MP /wd4267 /wd4244 /wd4996")
     endif()
     
     set(LIB_Ws2_32 Ws2_32)
@@ -111,7 +112,7 @@ add_definitions(-DHAVE_CONFIG_H)
 add_definitions(-D_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS=1)
 add_definitions(-DUSE_STD_NAMESPACE=1)
 add_definitions(-DMG_ENABLE_THREADS)
-add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+add_definitions(-DSQLITE_THREADSAFE=1)
 #add_definitions(-DFTD2XX_STATIC)
 
 include_directories(${ADD_INCLUDE_DIR})
@@ -126,6 +127,7 @@ include_directories(ev)
 include_directories(${Mongoose_DIR})
 include_directories(${SQLite_DIR})
 include_directories(3rdparty/ftdi)
+include_directories(3rdparty/rawhid)
 
 ########################################
 # LIBRARY
@@ -134,34 +136,36 @@ include_directories(3rdparty/ftdi)
 #string(SUBSTRING ${VERSION_MINOR} 0 1 VERSION_MINOR_0)
 #string(SUBSTRING ${VERSION_MINOR} 1 1 VERSION_MINOR_1)
 
-file(GLOB ev_src
-    "ev/*.cpp"
-    "ev/*.c"
+file(GLOB server_src
+    "server/*.cpp"
+    "server/*.c"
 )
-file(GLOB ev_hdr
-    "ev/*.h"
+file(GLOB server_hdr
+    "server/*.h"
 )
 
 set(other_src ${other_src}
      ${Mongoose_DIR}/mongoose.c
      ${SQLite_DIR}/sqlite3.c
+     3rdparty/rawhid/hid_WINDOWS.c
 )
 set(other_hdr ${other_hdr}
      ${Mongoose_DIR}/mongoose.h
      ${SQLite_DIR}/sqlite3.h
+     3rdparty/rawhid/hid.h
 )
 
 ########################################
-# EXECUTABLE ev
+# EXECUTABLE server
 ########################################
 
-add_executable                  (main ${ev_src} ${other_src})
-target_link_libraries           (main ${LIB_Ws2_32} ${LIB_pthread} ftd2xx)
+add_executable                  (server ${server_src} ${other_src})
+target_link_libraries           (server ${LIB_Ws2_32} ${LIB_pthread} ftd2xx setupapi)
 if(UNIX)
-    target_link_libraries       (main dl)
+    target_link_libraries       (server dl)
 endif()
-set_target_properties           (main PROPERTIES OUTPUT_NAME main)
-set_target_properties           (main PROPERTIES VERSION ${VERSION_MAJOR}.${VERSION_MINOR_0}.${VERSION_MINOR_1})
-export(TARGETS main FILE ${CMAKE_BINARY_DIR}/MainTargets.cmake)
+set_target_properties           (server PROPERTIES OUTPUT_NAME server)
+set_target_properties           (server PROPERTIES VERSION ${VERSION_MAJOR}.${VERSION_MINOR_0}.${VERSION_MINOR_1})
+export(TARGETS server FILE ${CMAKE_BINARY_DIR}/ServerTargets.cmake)
 
 ########################################

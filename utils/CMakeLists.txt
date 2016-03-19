@@ -35,3 +35,24 @@ set_target_properties           (hget PROPERTIES VERSION ${HGET_VERSION_PLAIN})
 export(TARGETS hget FILE ${CMAKE_BINARY_DIR}/HGetTargets.cmake)
 
 ########################################
+# rawhid
+########################################
+set(RAWHID_VERSION_MAJOR 1)
+set(RAWHID_VERSION_MINOR 0)
+set(RAWHID_VERSION_PLAIN ${RAWHID_VERSION_MAJOR}.${RAWHID_VERSION_MINOR})
+
+add_definitions(-DOS_WINDOWS)
+include_directories(../3rdparty/rawhid)
+
+file(GLOB rawhid_src
+    "rawhid.c"
+    "../3rdparty/rawhid/hid_WINDOWS.c"
+)
+add_executable                  (rawhid ${rawhid_src})
+target_link_libraries           (rawhid hid setupapi)
+set_target_properties           (rawhid PROPERTIES OUTPUT_NAME rawhid)
+set_target_properties           (rawhid PROPERTIES VERSION ${RAWHID_VERSION_PLAIN})
+export(TARGETS rawhid FILE ${CMAKE_BINARY_DIR}/RawHidTargets.cmake)
+
+
+########################################
