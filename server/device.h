@@ -11,6 +11,8 @@ enum {
     DeviceWritten = 0x0008
 };
 
+struct db;
+
 struct _Device
 {
     CRITICAL_SECTION   rx_sync;
@@ -42,8 +44,8 @@ void device_init(struct _Device *dev);
 void device_close(struct _Device *dev);
 int  device_write(struct _Device *dev, uint8_t *data, int len);
 void device_destroy(struct _Device *dev);
-void device_receive(struct _Device *dev);
+void device_receive(struct db *db, struct _Device *dev);
 
-void device_fw_read60(struct _Device * dev);
-void device_fw_read42(struct _Device * dev);
+void device_fw_read60(struct db *db, struct _Device * dev);
+void device_fw_read42(struct db *db, struct _Device * dev);
 

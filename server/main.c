@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <mongoose.h>
+#include "db_plugin.h"
 #include "device_ftdi.h"
 #include "device_hid.h"
 
@@ -12,10 +13,12 @@ main(int argc, char *argv[])
 {
     struct _Device    df;
     struct _Device    dh;
+    struct db        *db;
     DWORD             rx_wait;
     HANDLE            h[8];
     int               i = 0;
 
+    db = db_current();
     device_ftdi_init(&df);
     device_hid_init(&dh);
     h[0] = df.events[DEVICE_STATUS_OPENED];
@@ -29,6 +32,7 @@ main(int argc, char *argv[])
     h[7] = dh.events[DEVICE_STATUS_WRITED];
     df.loop = 1;
     dh.loop = 1;
+    db_start_q(db);
     while (df.loop && dh.loop) {
         rx_wait = WaitForMultipleObjects(8, h, FALSE, 100);
         switch (rx_wait) {
@@ -56,27 +60,13 @@ main(int argc, char *argv[])
 
         case WAIT_OBJECT_0 + DEVICE_STATUS_READED: /** Приняли с FTDI */
         {
-            device_receive(&df);
-            break;
-        }
-        case WAIT_OBJECT_0 + DEVICE_STATUS_WRITED: /** Приняли в FTDI */
-        {
-            EnterCriticalSection(&df.tx_sync);
-            //fprintf(stdout, "FTDI written: %d\n", df.dev.tx_len);
-            LeaveCriticalSection(&df.tx_sync);
+            device_receive(db, &df);
             break;
         }
         case WAIT_OBJECT_0 + 4 + DEVICE_STATUS_READED: /** Приняли с HID */
         {
-            device_receive(&dh);
+            device_receive(db, &dh);
             i = 1;
-            break;
-        }
-        case WAIT_OBJECT_0 + 4 + DEVICE_STATUS_WRITED: /** Записали в HID */
-        {
-            EnterCriticalSection(&dh.tx_sync);
-            //fprintf(stdout, "HID  written: %d\n", dh.dev.tx_len);
-            LeaveCriticalSection(&dh.tx_sync);
             break;
         }
         default:
@@ -90,6 +80,7 @@ main(int argc, char *argv[])
             device_write(&dh, d, sizeof(d));
         }
     }
+    db_close(db);
     device_hid_exit(&dh);
     device_ftdi_exit(&df);    
     system("pause");
