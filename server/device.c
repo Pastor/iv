@@ -6,15 +6,14 @@ device_init(struct _Device* dev)
 {
     InitializeCriticalSectionAndSpinCount(&dev->rx_sync, 0x00000400);
     InitializeCriticalSectionAndSpinCount(&dev->tx_sync, 0x00000400);
-    dev->rx_event = CreateEvent(NULL, FALSE, FALSE, NULL);
-    dev->rx_buf_size = sizeof(dev->rx) / sizeof(dev->rx[0]);
+    dev->events[DEVICE_STATUS_OPENED] = CreateEvent(NULL, FALSE, FALSE, NULL);
+    dev->events[DEVICE_STATUS_CLOSED] = CreateEvent(NULL, FALSE, FALSE, NULL);
+    dev->events[DEVICE_STATUS_READED] = CreateEvent(NULL, FALSE, FALSE, NULL);
+    dev->events[DEVICE_STATUS_WRITED] = CreateEvent(NULL, FALSE, FALSE, NULL);
     dev->rx_index = 0;
-    dev->tx_event = CreateEvent(NULL, FALSE, FALSE, NULL);
-    dev->tx_buf_size = sizeof(dev->tx) / sizeof(dev->tx[0]);
     dev->tx_index = 0;
     dev->tx_len = 0;
     dev->thread = INVALID_HANDLE_VALUE;
-    dev->thread_event_close = CreateEvent(NULL, FALSE, FALSE, NULL);
 }
 
 void 
@@ -23,8 +22,6 @@ device_close(struct _Device* dev)
     EnterCriticalSection(&dev->rx_sync);
     EnterCriticalSection(&dev->tx_sync);
     __try {
-        SetEvent(dev->thread_event_close);
-        Sleep(100);
         if (dev->thread != NULL && dev->thread != INVALID_HANDLE_VALUE) {
             TerminateThread(dev->thread, 0);
         }
@@ -43,7 +40,7 @@ device_write(struct _Device *dev, uint8_t *data, int len)
     int ret;
 
     EnterCriticalSection(&dev->tx_sync);
-    if (dev->tx_index + len < dev->tx_buf_size) {
+    if (dev->tx_index + len < sizeof(dev->tx)/sizeof(dev->tx[0])) {
         memcpy(dev->tx + dev->tx_index, data, len);
         dev->tx_index += len;
         ret = len;
@@ -59,9 +56,10 @@ device_destroy(struct _Device* dev)
 {
     DeleteCriticalSection(&dev->rx_sync);
     DeleteCriticalSection(&dev->tx_sync);
-    CloseHandle(dev->rx_event);
-    CloseHandle(dev->tx_event);
-    CloseHandle(dev->thread_event_close);
+    CloseHandle(dev->events[DEVICE_STATUS_OPENED]);
+    CloseHandle(dev->events[DEVICE_STATUS_CLOSED]);
+    CloseHandle(dev->events[DEVICE_STATUS_READED]);
+    CloseHandle(dev->events[DEVICE_STATUS_WRITED]);
 }
 
 void 
@@ -159,6 +157,9 @@ void device_fw_read42(struct _Device* dev)
                         ++i;
                     }
                     /** Button = 7 - number */
+                    if (isdigit((int)dev_enter_s[3])) {
+                        dev_enter_s[3] = '0' + (7 - (dev_enter_s[3] - '0'));
+                    }
                     fprintf(stdout, "G: %03d, I: %03d, B: %02d, T: %04d, E: %04s\n", dev_group, dev_index, dev_battery, dev_timeout, dev_enter_s);
                 }
 

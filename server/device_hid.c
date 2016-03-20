@@ -17,13 +17,13 @@ hid_thread(LPVOID p)
         if (r > 0) {
             int  num = 0;
             dev->fw = fw_parse_w( rawhid_product(0) );
-            /** Connect device */
+            if (dev->fw != NONE)
+                DEVICE_SET_OPENED(dev);
             while (dev->fw != NONE) {
                 memset(buf, 0, sizeof(buf));
                 num = rawhid_recv(0, buf, 64, 220);
                 if (num < 0) {
-                    printf("\nerror reading, device went offline\n");
-                    /** Disconnect device*/
+                    DEVICE_SET_CLOSED(dev);
                     r = -1;
                     dev->fw = NONE;
                 } else if (num > 0 && buf[0] > 0) {
@@ -34,7 +34,7 @@ hid_thread(LPVOID p)
                 } else {
                     if (dev->rx_index > 0) {
                         EnterCriticalSection(&dev->rx_sync);
-                        SetEvent(dev->rx_event);
+                        DEVICE_SET_READED(dev);
                         LeaveCriticalSection(&dev->rx_sync);
                     }
                     EnterCriticalSection(&dev->tx_sync);
@@ -43,7 +43,7 @@ hid_thread(LPVOID p)
                         dev->tx_len = rawhid_send(0, dev->tx, 64, 100);
                         if (dev->tx_len > 0) {
                             dev->tx_index = 0;
-                            SetEvent(dev->tx_event);
+                            DEVICE_SET_WRITTEN(dev);
                         } else {
                             /**FIXME: Error */
                         }
@@ -75,6 +75,7 @@ device_hid_init(struct _Device *dev)
 void
 device_hid_exit(struct _Device *dev)
 {
+    dev->loop = 0;
     rawhid_close(0);
     device_destroy(dev);
 }
