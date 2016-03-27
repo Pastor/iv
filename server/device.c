@@ -138,7 +138,7 @@ void device_fw_read42(struct db *db, struct _Device* dev)
         buf[len] = 0;
         if (buf[0] == 'Q') {
             uint8_t   dev_group = byte_from_hex(&buf[1]);
-            if (len >= 512) {                
+            if (len >= 510) {                
                 uint32_t  i = 0;
                 uint8_t   dev_index;
                 uint8_t   dev_battery = 0;
@@ -163,10 +163,14 @@ void device_fw_read42(struct db *db, struct _Device* dev)
                     }
                     /** Button = 7 - number */
                     if (isdigit((int)dev_enter_s[3])) {
-                        dev_enter_s[3] = '0' + (7 - (dev_enter_s[3] - '0'));
+                        int n = (7 - (dev_enter_s[3] - '0') & 255);
+                        dev_enter_s[3] = '0' + n;
                     }
-                    fprintf(stdout, "G: %03d, I: %03d, B: %02d, T: %04d, E: %04s\n", dev_group, dev_index, dev_battery, dev_timeout, dev_enter_s);
-                    db_q_put(db, 42, dev_group, dev_index, dev_timeout, dev_battery, dev_enter_s);
+
+                    if (dev_enter_s[3] != 'E') {
+                        fprintf(stdout, "G: %03d, I: %03d, B: %02d, T: %04d, E: %04s\n", dev_group, dev_index, dev_battery, dev_timeout, dev_enter_s);
+                        db_q_put(db, 42, dev_group, dev_index, dev_timeout, dev_battery, dev_enter_s);
+                    }                    
                 }
                 db_tm_commit(db);
             } else {

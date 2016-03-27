@@ -26,6 +26,8 @@ hid_thread(LPVOID p)
                     DEVICE_SET_CLOSED(dev);
                     r = -1;
                     dev->fw = NONE;
+                    dev->tx_index = 0;
+                    dev->rx_index = 0;
                 } else if (num > 0 && buf[0] > 0) {
                     EnterCriticalSection(&dev->rx_sync);
                     memcpy(dev->rx + dev->rx_index, buf + 1, buf[0]);

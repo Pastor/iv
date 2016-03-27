@@ -161,7 +161,7 @@ int rawhid_recv(int num, void *buf, int len, int timeout)
 	LeaveCriticalSection(&rx_mutex);
 	if (n <= 0) return -1;
 	n--;
-	if (n > len) n = len;
+	if ((int)n > len) n = len;
 	memcpy(buf, tmpbuf + 1, n);
 	return n;
 return_timeout:
@@ -189,6 +189,8 @@ int rawhid_send(int num, void *buf, int len, int timeout)
 	unsigned char tmpbuf[516];
 	OVERLAPPED ov;
 	DWORD n, r;
+    unsigned char *p;
+    int            plen;
 
 	if (sizeof(tmpbuf) < len + 1) return -1;
 	hid = get_hid(num);
@@ -197,11 +199,20 @@ int rawhid_send(int num, void *buf, int len, int timeout)
 	ResetEvent(&tx_event);
 	memset(&ov, 0, sizeof(ov));
 	ov.hEvent = tx_event;
-	tmpbuf[0] = 0;
-	memcpy(tmpbuf + 1, buf, len);
-    //Without first byte
-	if (!WriteFile(hid->handle, buf, len, NULL, &ov)) {
-		if (GetLastError() != ERROR_IO_PENDING) goto return_error;
+    p = buf;
+    plen = len;
+next_b:
+	if (!WriteFile(hid->handle, p, plen, NULL, &ov)) {
+        if (GetLastError() != ERROR_IO_PENDING) {
+            if (p != tmpbuf) {
+                tmpbuf[0] = 0;
+                memcpy(tmpbuf + 1, buf, len);
+                p = tmpbuf;
+                plen = len + 1;
+                goto next_b;
+            }
+            goto return_error;
+        }
 		r = WaitForSingleObject(tx_event, timeout);
 		if (r == WAIT_TIMEOUT) goto return_timeout;
 		if (r != WAIT_OBJECT_0) goto return_error;

@@ -8,6 +8,18 @@
 #include "device_ftdi.h"
 #include "device_hid.h"
 
+int group(unsigned char b[2])
+{
+    if (b[0] >= '0' && b[0] <= '9') {
+        if (b[1] >= '0' && b[1] <= '9')
+            return ((b[0] - '0') << 4 | b[1] - '0') & 255;
+        return ((b[0] - '0') << 4 | (b[1] - 'A' + 10)) & 255;
+    }
+    if (b[1] >= '0' && b[1] <= '9')
+        return ((b[0] - 'A' + 10) << 4 | b[1] - '0') & 255;
+    return ((b[0] - 'A' + 10) << 4 | (b[1] - 'A' + 10)) & 255;
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -17,6 +29,10 @@ main(int argc, char *argv[])
     DWORD             rx_wait;
     HANDLE            h[8];
     int               i = 0;
+
+
+    int g = group((unsigned char *)"2D");
+
 
     db = db_current();
     device_ftdi_init(&df);
