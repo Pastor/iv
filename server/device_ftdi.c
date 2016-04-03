@@ -5,8 +5,7 @@
 
 
 static  DWORD __stdcall
-ftdi_thread(LPVOID p)
-{
+ftdi_thread(LPVOID p) {
     struct _Device          *dev = (struct _Device *)p;
     DWORD                    devices = 0;
     FT_STATUS                status;
@@ -55,7 +54,7 @@ ftdi_thread(LPVOID p)
                                         EnterCriticalSection(&dev->tx_sync);
                                         if (dev->tx_index > 0) {
                                             DWORD written = 0;
-                                            
+
                                             status = FT_Write(h, dev->tx, dev->tx_index, &written);
                                             if (FT_SUCCESS(status)) {
                                                 if (written < dev->tx_index) {
@@ -72,6 +71,7 @@ ftdi_thread(LPVOID p)
                                     }
                                 } else {
                                     dev->fw = NONE;
+                                    DEVICE_SET_CLOSED(dev);
                                 }
                             }
                         }
@@ -87,27 +87,25 @@ ftdi_thread(LPVOID p)
 }
 
 int
-device_ftdi_init(struct _Device *dev)
-{
+device_ftdi_init(struct _Device *dev) {
     device_init(dev);
     dev->thread = CreateThread(NULL, 0, ftdi_thread, (LPVOID)dev, 0, &dev->thread_id);
     return dev->thread != INVALID_HANDLE_VALUE;
 }
 
 void
-device_ftdi_exit(struct _Device *dev)
-{
+device_ftdi_exit(struct _Device *dev) {
     DWORD                    devices;
     FT_DEVICE_LIST_INFO_NODE list[1];
     FT_HANDLE                h;
-    
-    if (FT_CreateDeviceInfoList(&devices) == FT_OK && 
-        devices > 0 && 
-        FT_GetDeviceInfoList(list, &devices) == FT_OK && 
+
+    if (FT_CreateDeviceInfoList(&devices) == FT_OK &&
+        devices > 0 &&
+        FT_GetDeviceInfoList(list, &devices) == FT_OK &&
         fw_parse(list[0].Description) != NONE &&
         (list[0].Flags & FT_FLAGS_OPENED) == FT_FLAGS_OPENED &&
         FT_Open(0, &h) == FT_OK) {
-        
+
         FT_Close(h);
     }
     dev->loop = 0;

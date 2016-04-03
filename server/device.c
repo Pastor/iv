@@ -63,27 +63,30 @@ device_destroy(struct _Device* dev)
     CloseHandle(dev->events[DEVICE_STATUS_WRITED]);
 }
 
-void 
+int 
 device_receive(struct db *db, struct _Device* dev)
 {
+    int ret = 0;
     EnterCriticalSection(&dev->rx_sync);
     dev->rx[dev->rx_index] = 0;
     //fprintf(stdout, "Receive: %s\n", (char *)evf.rx);
     if (dev->fw == FW60) {
-        device_fw_read60(db, dev);
+        device_fw_read60(db, dev, &ret);
     } else if (dev->fw == FW42) {
-        device_fw_read42(db, dev);
+        device_fw_read42(db, dev, &ret);
     }
     LeaveCriticalSection(&dev->rx_sync);
+    return ret;
 }
 
 void 
-device_fw_read60(struct db *db, struct _Device* dev)
+device_fw_read60(struct db *db, struct _Device* dev, int *ret)
 {
     uint32_t next = 0;
     uint32_t it = 0;
 
     db_tm_begin(db);
+    (*ret) = 0;
     for (it = 0; it < dev->rx_index; it += next) {
         next = 0;
         if (fw_is_complete(dev->rx + it, dev->rx_index - it)) {
@@ -100,6 +103,7 @@ device_fw_read60(struct db *db, struct _Device* dev)
 
                 fprintf(stdout, "G: %03d, I: %03d, B: %02d, T: %04d, E: %04s\n", dev_group, dev_index, dev_battery, dev_timeout, dev_enter_s);
                 db_q_put(db, 60, dev_group, dev_index, dev_timeout, dev_battery, dev_enter_s);
+                (*ret)++;
             } else {
                 fprintf(stdout, "Damaged: %d, Size: %d\n", next, dev->rx_index);
             }
@@ -121,7 +125,7 @@ device_fw_read60(struct db *db, struct _Device* dev)
     }
 }
 
-void device_fw_read42(struct db *db, struct _Device* dev)
+void device_fw_read42(struct db *db, struct _Device* dev, int *ret)
 {
     uint8_t  buf[sizeof(dev->rx)];
     uint32_t len = 0;
@@ -145,6 +149,7 @@ void device_fw_read42(struct db *db, struct _Device* dev)
                 uint16_t  dev_timeout = 0;
                 char      dev_enter_s[5] = { ' ', ' ', 0, 0, 0 };
 
+                (*ret) = 0;
                 db_tm_begin(db);
                 for (i = 3; i < len; ++i) {
                     if (buf[i] == '\r' || buf[i] == '\n' || buf[i] == ' ')
@@ -170,6 +175,7 @@ void device_fw_read42(struct db *db, struct _Device* dev)
                     if (dev_enter_s[3] != 'E') {
                         fprintf(stdout, "G: %03d, I: %03d, B: %02d, T: %04d, E: %04s\n", dev_group, dev_index, dev_battery, dev_timeout, dev_enter_s);
                         db_q_put(db, 42, dev_group, dev_index, dev_timeout, dev_battery, dev_enter_s);
+                        (*ret)++;
                     }                    
                 }
                 db_tm_commit(db);

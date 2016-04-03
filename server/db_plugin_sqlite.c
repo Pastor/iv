@@ -4,6 +4,7 @@
 #include <time.h>
 #include <sqlite3.h>
 #include <Windows.h>
+#include "event.h"
 #include "db_plugin.h"
 
 struct db {
@@ -14,21 +15,23 @@ struct db {
 };
 
 static const char * const db_table_events = "CREATE TABLE IF NOT EXISTS `events` ("
-	" `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"
-    " `type` INTEGER NOT NULL,"
-    " `created_at` TEXT NOT NULL DEFAULT 'datetime(''now'')'"
-    ")";
+" `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"
+" `type` INTEGER NOT NULL,"
+" `dev` INTEGER DEFAULT 0,"
+" `text` TEXT DEFAULT NULL,"
+" `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"
+")";
 static const char * const db_table_sessions = "CREATE TABLE IF NOT EXISTS `sessions` ("
-	" `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"
-    " `created_at` TEXT NOT NULL DEFAULT 'datetime(''now'')',"
-    " `completed_at` TEXT DEFAULT NULL"
-    ")";
+" `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"
+" `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+" `completed_at` TIMESTAMP DEFAULT NULL"
+")";
 static const char * const db_table_devices = "CREATE TABLE IF NOT EXISTS `devices_%s` ("
-	" `id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"
-    " `timeout`	INTEGER NOT NULL DEFAULT 0,"
-    " `battery`	INTEGER NOT NULL DEFAULT 0,"
-    " `enter`	TEXT NOT NULL DEFAULT 'EEEE'"
-    ")";
+" `id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"
+" `timeout`	INTEGER NOT NULL DEFAULT 0,"
+" `battery`	INTEGER NOT NULL DEFAULT 0,"
+" `enter`	TEXT NOT NULL DEFAULT 'EEEE'"
+")";
 
 
 static const char * const db_pragma[] = {
@@ -39,30 +42,29 @@ static const char * const db_pragma[] = {
 };
 
 struct db *
-db_open(const char *path) {
-  sqlite3 *db = NULL;
-  if (sqlite3_open_v2(path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, NULL) == SQLITE_OK) {
-      int i;
+    db_open(const char *path) {
+    sqlite3 *db = NULL;
+    if (sqlite3_open_v2(path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, NULL) == SQLITE_OK) {
+        int i;
 
-      sqlite3_exec(db, db_table_events, 0, 0, 0);
-      sqlite3_exec(db, db_table_sessions, 0, 0, 0);
+        sqlite3_exec(db, db_table_events, 0, 0, 0);
+        sqlite3_exec(db, db_table_sessions, 0, 0, 0);
 
-      for (i = 0; i < sizeof(db_pragma) / sizeof(db_pragma[0]); ++i) {
-          sqlite3_exec(db, db_pragma[i], 0, 0, 0);
-      }
-  } else {
-      return NULL;
-  }
-  struct db *d = (struct db *)calloc(1, sizeof(struct db));
-  d->db = db;
-  InitializeCriticalSectionAndSpinCount(&d->sync, 0x00000400);
-  db_stop_q(d);
-  return d;
+        for (i = 0; i < sizeof(db_pragma) / sizeof(db_pragma[0]); ++i) {
+            sqlite3_exec(db, db_pragma[i], 0, 0, 0);
+        }
+    } else {
+        return NULL;
+    }
+    struct db *d = (struct db *)calloc(1, sizeof(struct db));
+    d->db = db;
+    InitializeCriticalSectionAndSpinCount(&d->sync, 0x00000400);
+    db_stop_q(d);
+    return d;
 }
 
-struct db* 
-db_current()
-{
+struct db*
+    db_current() {
     char   buf[20];
     time_t timer;
     struct tm *cur;
@@ -74,8 +76,7 @@ db_current()
 }
 
 int
-db_start_q(struct db *db)
-{
+db_start_q(struct db *db) {
     char   buf[256];
     time_t timer;
     struct tm *cur;
@@ -94,8 +95,7 @@ db_start_q(struct db *db)
 }
 
 void
-db_stop_q(struct db *db)
-{
+db_stop_q(struct db *db) {
     char   buf[256];
 
     EnterCriticalSection(&db->sync);
@@ -105,10 +105,10 @@ db_stop_q(struct db *db)
     LeaveCriticalSection(&db->sync);
 }
 
-void 
-db_q_put(struct db* db, int fw, int group, int index, int timeout, int battery, char enter[5])
-{
+void
+db_q_put(struct db* db, int fw, int group, int index, int timeout, int battery, char enter[5]) {
     int           id = 0;
+    int           button;
     sqlite3_stmt *stmt = NULL;
     char          buf[256];
 
@@ -131,31 +131,88 @@ db_q_put(struct db* db, int fw, int group, int index, int timeout, int battery, 
         sqlite3_step(stmt);
         sqlite3_finalize(stmt);
     }
+    enter[4] = 0;
+    button = strtol(enter, NULL, 10) & 255;
+    db_put_event(db, DEVICE_RECVEIVE | ( fw == 42 ? FIRMWARE_42 : FIRMWARE_60), id + (button << 24));
     LeaveCriticalSection(&db->sync);
 }
 
-void 
-db_tm_begin(struct db* db)
-{
+void
+db_tm_begin(struct db* db) {
     EnterCriticalSection(&db->sync);
     sqlite3_exec(db->db, "BEGIN", 0, 0, 0);
 }
 
-void 
-db_tm_commit(struct db* db)
-{
+void
+db_tm_commit(struct db* db) {
     sqlite3_exec(db->db, "COMMIT", 0, 0, 0);
     LeaveCriticalSection(&db->sync);
 }
 
-void 
+int
+db_last_event(struct db* db) {
+    sqlite3_stmt *stmt = NULL;
+    int ret = -1;
+
+    EnterCriticalSection(&db->sync);
+    if (sqlite3_prepare_v2(db->db, "SELECT id FROM events ORDER BY id DESC LIMIT 1", -1, &stmt, NULL) == SQLITE_OK) {
+        sqlite3_step(stmt);
+        ret = sqlite3_column_int(stmt, 0);
+        sqlite3_finalize(stmt);
+    }
+    LeaveCriticalSection(&db->sync);
+    return ret;
+}
+
+int
+db_get_events(struct db* db, int last_event, char* events, int len, int *writed) {
+    sqlite3_stmt *stmt = NULL;
+    int dev;
+    int result;
+    int id = -1;
+    int type = -1;
+
+    EnterCriticalSection(&db->sync);
+    (*writed) = 1;
+    (*events) = '[';
+    if (sqlite3_prepare_v2(db->db, "SELECT id, type, dev FROM events WHERE id > ? ORDER BY id", -1, &stmt, NULL) == SQLITE_OK) {
+        sqlite3_bind_int(stmt, 1, last_event);
+        while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
+            id = sqlite3_column_int(stmt, 0);
+            type = sqlite3_column_int(stmt, 1);
+            dev = sqlite3_column_int(stmt, 2);
+            if ((*writed) > 1)
+                (*writed) += sprintf(events + (*writed), ",");
+            (*writed) += sprintf(events + (*writed), "[%d, %d, %d]", id, type, dev);
+        }
+        sqlite3_finalize(stmt);
+    }
+    (*(events + (*writed)++)) = ']';
+    LeaveCriticalSection(&db->sync);
+    return id;
+}
+
+void
+db_put_event(struct db* db, int type, int dev) {
+    sqlite3_stmt *stmt = NULL;
+    EnterCriticalSection(&db->sync);
+    if (sqlite3_prepare_v2(db->db, "INSERT INTO events(type, dev) VALUES(?, ?)", -1, &stmt, NULL) == SQLITE_OK) {
+        sqlite3_bind_int(stmt, 1, type);
+        sqlite3_bind_int(stmt, 2, dev);
+        sqlite3_step(stmt);
+        sqlite3_finalize(stmt);
+    }
+    LeaveCriticalSection(&db->sync);
+}
+
+void
 db_close(struct db *db) {
-  if (db != NULL && db->db != NULL) {
-    sqlite3_close(db->db);
-    db->db = NULL;
-    DeleteCriticalSection(&db->sync);
-    free(db);
-  }
+    if (db != NULL && db->db != NULL) {
+        sqlite3_close(db->db);
+        db->db = NULL;
+        DeleteCriticalSection(&db->sync);
+        free(db);
+    }
 }
 
 /**
