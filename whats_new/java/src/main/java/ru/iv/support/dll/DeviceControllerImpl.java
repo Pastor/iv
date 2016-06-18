@@ -1,5 +1,6 @@
 package ru.iv.support.dll;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.iv.support.*;
 
@@ -9,6 +10,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 @Service
+@Slf4j
 final class DeviceControllerImpl implements DeviceController, Callback {
     private final BlockingQueue<Event> events = new LinkedBlockingQueue<>(1000);
 
@@ -20,12 +22,12 @@ final class DeviceControllerImpl implements DeviceController, Callback {
 
     @Override
     public void send(Device device, String command) {
-        Library.send(device, command, true);
+        Library.send(device.ordinal(), command, true);
     }
 
     @Override
     public boolean hasDevice(Device device) {
-        return Library.hasDevice(device);
+        return Library.hasDevice(device.ordinal());
     }
 
     @Override
@@ -34,20 +36,20 @@ final class DeviceControllerImpl implements DeviceController, Callback {
     }
 
     @Override
-    public void connected(Device device, Firmware firmware) {
-        events.add(new Event(device, firmware, Event.Type.CONNECTED));
+    public void connected(int device, int firmware) {
+        events.add(new Event(Device.valueOf(device), Firmware.valueOf(firmware), Event.Type.CONNECTED));
     }
 
     @Override
-    public void disconnected(Device device, Firmware firmware) {
-        events.add(new Event(device, firmware, Event.Type.DISCONNECTED));
+    public void disconnected(int device, int firmware) {
+        events.add(new Event(Device.valueOf(device), Firmware.valueOf(firmware), Event.Type.DISCONNECTED));
     }
 
     @Override
-    public void handle(Device device, Firmware firmware, Packet[] packets, int count) {
+    public void handle(int device, int firmware, Packet[] packets, int count) {
         final Packet[] newPackets = new Packet[count];
         System.arraycopy(packets, 0, newPackets, 0, count);
-        events.add(new Event(device, firmware, newPackets));
+        events.add(new Event(Device.valueOf(device), Firmware.valueOf(firmware), newPackets));
     }
 
     public static void main(String[] args) {

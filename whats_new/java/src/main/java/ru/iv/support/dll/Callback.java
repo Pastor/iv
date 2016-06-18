@@ -1,14 +1,12 @@
 package ru.iv.support.dll;
 
-import ru.iv.support.Device;
-import ru.iv.support.Firmware;
 import ru.iv.support.Packet;
 
 public interface Callback {
 
-    void connected(Device device, Firmware firmware);
+    void connected(int device, int firmware);
 
-    void disconnected(Device device, Firmware firmware);
+    void disconnected(int device, int firmware);
 
-    void handle(Device device, Firmware firmware, Packet[] packets, int count);
+    void handle(int device, int firmware, Packet[] packets, int count);
 }

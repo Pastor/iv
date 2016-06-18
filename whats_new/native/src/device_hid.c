@@ -13,7 +13,7 @@ hid_thread(LPVOID p)
     uint8_t        buf[64];
 
     dev->loop = 1;
-    while (r <= 0) {
+    while (dev->loop) {
         r = rawhid_open(1, 0x10C4, 0x8468, 0xFF00, 0x0001);
         if (r > 0) {
             int  num = 0;

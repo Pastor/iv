@@ -34,9 +34,9 @@ final class Library {
 
     static native void register(Callback callback);
 
-    static native void send(Device device, String command, boolean calcHash);
+    static native void send(int device, String command, boolean calcHash);
 
-    static native boolean hasDevice(Device device);
+    static native boolean hasDevice(int device);
 
     private static native boolean init();
 
@@ -59,17 +59,17 @@ final class Library {
         if (LOADED) {
             register(new Callback() {
                 @Override
-                public void connected(Device device, Firmware firmware) {
+                public void connected(int device, int firmware) {
                     System.out.println("Connected: " + device + " -> " + firmware);
                 }
 
                 @Override
-                public void disconnected(Device device, Firmware firmware) {
+                public void disconnected(int device, int firmware) {
                     System.out.println("Disconnected: " + device + " -> " + firmware);
                 }
 
                 @Override
-                public void handle(Device device, Firmware firmware, Packet[] packets, int count) {
+                public void handle(int device, int firmware, Packet[] packets, int count) {
                     for (int i = 0; i < count; i++) {
                         System.out.println(packets[i]);
                     }
@@ -77,7 +77,7 @@ final class Library {
             });
             System.out.println("Loaded");
             Thread.currentThread().join(5000);
-            send(Device.HID, "Q2D\r", true);
+            send(Device.HID.ordinal(), "Q2D\r", true);
         } else {
             System.out.println("Not loaded");
         }

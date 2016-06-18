@@ -53,13 +53,7 @@ static jfieldID  packetBattery;
 static jfieldID  packetTimeout;
 static jfieldID  packetEnter;
 static jobject   packetInitObject;
-static jmethodID deviceEquals;
 
-static jobject   deviceHID;
-static jobject   deviceFTDI;
-
-static jobject   firmware45;
-static jobject   firmware60;
 static FILE     *fd = NULL;
 static int registered = FALSE;
 
@@ -100,7 +94,7 @@ receive_cb(int fw, struct _Result result[100], int count, void *user)
             (*userEnv)->SetObjectField(userEnv, object, packetEnter, (*userEnv)->NewStringUTF(userEnv, result[i].enter_s));
             DEBUG_ENV(userEnv);
         }
-        (*userEnv)->CallVoidMethod(userEnv, callback, handle, deviceFTDI, df.fw == FW42 ? firmware45 : firmware60, packets, (jint)count);
+        (*userEnv)->CallVoidMethod(userEnv, callback, handle, 1, df.fw == FW42 ? 0 : 1, packets, (jint)count);
         DEBUG_ENV(userEnv);
     }
 
@@ -137,7 +131,7 @@ EventLoop(LPVOID pData)
             DEBUG();
             fflush(fd);
             if (eventEnv) {
-                (*eventEnv)->CallVoidMethod(eventEnv, callback, connected, deviceFTDI, df.fw == FW42 ? firmware45 : firmware60);
+                (*eventEnv)->CallVoidMethod(eventEnv, callback, connected, 1, df.fw == FW42 ? 0 : 1);
             }
             break;
         }
@@ -147,7 +141,7 @@ EventLoop(LPVOID pData)
             fprintf(fd, "FTDI disconnected\n");
             DEBUG();
             if (eventEnv) {
-                (*eventEnv)->CallVoidMethod(eventEnv, callback, disconnected, deviceFTDI, df.fw == FW42 ? firmware45 : firmware60);
+                (*eventEnv)->CallVoidMethod(eventEnv, callback, disconnected, 1, df.fw == FW42 ? 0 : 1);
             }
             break;
         }
@@ -157,7 +151,7 @@ EventLoop(LPVOID pData)
             fprintf(fd, "HID  connected\n");
             DEBUG();
             if (eventEnv) {
-                (*eventEnv)->CallVoidMethod(eventEnv, callback, connected, deviceHID, df.fw == FW42 ? firmware45 : firmware60);
+                (*eventEnv)->CallVoidMethod(eventEnv, callback, connected, 0, df.fw == FW42 ? 0 : 1);
             }
             break;
         }
@@ -167,7 +161,7 @@ EventLoop(LPVOID pData)
             fprintf(fd, "HID  disconnected\n");
             DEBUG();
             if (eventEnv) {
-                (*eventEnv)->CallVoidMethod(eventEnv, callback, disconnected, deviceHID, df.fw == FW42 ? firmware45 : firmware60);
+                (*eventEnv)->CallVoidMethod(eventEnv, callback, disconnected, 0, df.fw == FW42 ? 0 : 1);
             }
             break;
         }
@@ -217,10 +211,6 @@ void JNICALL Java_ru_iv_support_dll_Library_register(JNIEnv *callEnv, jclass unu
         DEBUG_ENV(callEnv);
         packetClass = (*callEnv)->FindClass(callEnv, "ru/iv/support/Packet");
         DEBUG_ENV(callEnv);
-        jclass firmwareClass = (*callEnv)->FindClass(callEnv, "ru/iv/support/Firmware");
-        DEBUG_ENV(callEnv);
-        jclass deviceClass = (*callEnv)->FindClass(callEnv, "ru/iv/support/Device");
-        DEBUG_ENV(callEnv);
         jobjectArray packetsArray = (*callEnv)->NewObjectArray(callEnv, 100, packetClass, NULL);
         DEBUG_ENV(callEnv);
         callback = (*callEnv)->NewGlobalRef(callEnv, callbackObject);
@@ -231,13 +221,11 @@ void JNICALL Java_ru_iv_support_dll_Library_register(JNIEnv *callEnv, jclass unu
             jobject object = (*callEnv)->NewObject(callEnv, packetClass, packetContructor);
             (*callEnv)->SetObjectArrayElement(callEnv, packetsArray, i, object);
         }
-        connected = (*callEnv)->GetMethodID(callEnv, callbackClass, "connected", "(Lru/iv/support/Device;Lru/iv/support/Firmware;)V");
+        connected = (*callEnv)->GetMethodID(callEnv, callbackClass, "connected", "(II)V");
         DEBUG_ENV(callEnv);
-        disconnected = (*callEnv)->GetMethodID(callEnv, callbackClass, "disconnected", "(Lru/iv/support/Device;Lru/iv/support/Firmware;)V");
+        disconnected = (*callEnv)->GetMethodID(callEnv, callbackClass, "disconnected", "(II)V");
         DEBUG_ENV(callEnv);
-        handle = (*callEnv)->GetMethodID(callEnv, callbackClass, "handle", "(Lru/iv/support/Device;Lru/iv/support/Firmware;[Lru/iv/support/Packet;I)V");
-        DEBUG_ENV(callEnv);
-        deviceEquals = (*callEnv)->GetMethodID(callEnv, deviceClass, "equals", "(Ljava/lang/Object;)Z");
+        handle = (*callEnv)->GetMethodID(callEnv, callbackClass, "handle", "(II[Lru/iv/support/Packet;I)V");
         DEBUG_ENV(callEnv);
         packets = (*callEnv)->NewGlobalRef(callEnv, packetsArray);
         DEBUG_ENV(callEnv);
@@ -252,15 +240,6 @@ void JNICALL Java_ru_iv_support_dll_Library_register(JNIEnv *callEnv, jclass unu
         packetEnter = (*callEnv)->GetFieldID(callEnv, packetClass, "enter", "Ljava/lang/String;");
         DEBUG_ENV(callEnv);
 
-        firmware45 = get_field_value(env, firmwareClass, "FW45", "Lru/iv/support/Firmware;");
-        DEBUG_ENV(callEnv);
-        firmware60 = get_field_value(env, firmwareClass, "FW60", "Lru/iv/support/Firmware;");
-        DEBUG_ENV(callEnv);
-
-        deviceHID = get_field_value(env, deviceClass, "HID", "Lru/iv/support/Device;");
-        DEBUG_ENV(callEnv);
-        deviceFTDI = get_field_value(env, deviceClass, "FTDI", "Lru/iv/support/Device;");
-        DEBUG_ENV(callEnv);
         DEBUG();
         device_ftdi_init(&df);
         DEBUG();
@@ -276,7 +255,7 @@ void JNICALL Java_ru_iv_support_dll_Library_register(JNIEnv *callEnv, jclass unu
     }
 }
 
-void JNICALL Java_ru_iv_support_dll_Library_send(JNIEnv *callEnv, jclass unusedJclass, jobject deviceObject, jstring strCommand, jboolean unuJboolean)
+void JNICALL Java_ru_iv_support_dll_Library_send(JNIEnv *callEnv, jclass unusedJclass, jint id, jstring strCommand, jboolean unuJboolean)
 {
     static uint8_t buffer[26];
     size_t len;
@@ -290,9 +269,9 @@ void JNICALL Java_ru_iv_support_dll_Library_send(JNIEnv *callEnv, jclass unusedJ
         buffer[1] = len + 2;
         fw_crc_create(&buffer[2], len + 1, &buffer[len + 2]);
         fprintf(fd, "COMMAND: %.*s\n", (int)len + 4, (const char *)buffer);
-        if ((*callEnv)->CallBooleanMethod(callEnv, deviceObject, deviceEquals, deviceHID) == JNI_TRUE) {
+        if (id == 0) {
             device_write(&dh, buffer, len + 5);
-        } else if ((*callEnv)->CallBooleanMethod(callEnv, deviceObject, deviceEquals, deviceFTDI) == JNI_TRUE) {
+        } else if (id == 1) {
             device_write(&df, buffer, len + 5);
         }
     }
@@ -300,11 +279,11 @@ void JNICALL Java_ru_iv_support_dll_Library_send(JNIEnv *callEnv, jclass unusedJ
     DEBUG_ENV(callEnv);
 }
 
-jboolean JNICALL Java_ru_iv_support_dll_Library_hasDevice(JNIEnv *callEnv, jclass unusedJclass, jobject deviceObject)
+jboolean JNICALL Java_ru_iv_support_dll_Library_hasDevice(JNIEnv *callEnv, jclass unusedJclass, jint id)
 {
-    if ((*callEnv)->CallBooleanMethod(callEnv, deviceObject, deviceEquals, deviceHID) == JNI_TRUE) {
+    if (id == 0) {
         return (jboolean)dh.fw != NONE;
-    } else if ((*callEnv)->CallBooleanMethod(callEnv, deviceObject, deviceEquals, deviceFTDI) == JNI_TRUE) {
+    } else if (id == 1) {
         return (jboolean)df.fw != NONE;
     }
     return JNI_FALSE;

@@ -1,5 +1,7 @@
 package ru.iv.support;
 
+import java.util.Arrays;
+
 public final class Event {
     private static final Packet[] EMPTY = new Packet[0];
     public final Device device;
@@ -26,5 +28,15 @@ public final class Event {
         CONNECTED,
         DISCONNECTED,
         PACKETS
+    }
+
+    @Override
+    public String toString() {
+        return "Event{" +
+                "device=" + device +
+                ", firmware=" + firmware +
+                ", type=" + type +
+                ", packets=" + Arrays.toString(packets) +
+                '}';
     }
 }
