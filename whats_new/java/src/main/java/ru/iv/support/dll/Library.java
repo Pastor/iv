@@ -7,7 +7,7 @@ import ru.iv.support.Packet;
 import java.io.File;
 
 final class Library {
-    public static final boolean LOADED;
+    private static final boolean LOADED;
     private static final String KEY_LIBRARY_PATH = "java.library.path";
     private static final String USER_DIRECTORY = System.getProperty("user.dir");
 
@@ -32,11 +32,11 @@ final class Library {
         }
     }
 
-    public static native void register(Callback callback);
+    static native void register(Callback callback);
 
-    public static native void send(Device device, String command, boolean calcHash);
+    static native void send(Device device, String command, boolean calcHash);
 
-    public static native boolean hasDevice(Device device);
+    static native boolean hasDevice(Device device);
 
     private static native boolean init();
 
