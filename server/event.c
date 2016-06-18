@@ -100,19 +100,19 @@ EventLoop(LPVOID pData) {
             if (device_receive(ev->db, ev->dh)) {
                 SetEvent(ev->event);
             }
-            i = 1;
+//            i = 1;
             break;
         }
         default:
             break;
         }
-        if (i > 0) {
-            uint8_t d[] = { 2, 6, 'Q', '2', 'D', '\r', 0, 0 };
+//        if (i > 0) {
+//            uint8_t d[] = { 2, 6, 'Q', '2', 'D', '\r', 0, 0 };
 
-            i = 0;
-            fw_crc_create(&d[2], 4, &d[6]);
-            device_write(ev->dh, d, sizeof(d));
-        }
+//            i = 0;
+//            fw_crc_create(&d[2], 4, &d[6]);
+//            device_write(ev->dh, d, sizeof(d));
+//        }
     }
 
     return 0;
@@ -147,7 +147,7 @@ static DWORD WINAPI OserverHandler(LPVOID pData) {
 }
 
 struct event *
-    event_start(struct _Device* df, struct _Device* dh, struct db* db, struct mg_connection *nc) {
+event_start(struct _Device* df, struct _Device* dh, struct db* db, struct mg_connection *nc) {
     struct event *event = (struct event *)calloc(1, sizeof(struct event));
     event->nc = nc;
     event->db = db;
@@ -164,6 +164,7 @@ event_stop(struct event** event) {
     if (event != NULL && (*event) != NULL) {
         CloseHandle((*event)->event);
         TerminateThread((*event)->event_thread_handle, -1);
+        TerminateThread((*event)->observer_thread_handle, -1);
         free((*event));
         (*event) = NULL;
     }
