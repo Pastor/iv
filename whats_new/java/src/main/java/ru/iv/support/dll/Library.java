@@ -1,7 +1,6 @@
 package ru.iv.support.dll;
 
 import ru.iv.support.Device;
-import ru.iv.support.Firmware;
 import ru.iv.support.Packet;
 
 import java.io.File;

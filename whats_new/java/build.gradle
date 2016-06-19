@@ -6,16 +6,20 @@ buildscript {
         mavenCentral()
         maven { url "http://repo.spring.io/snapshot" }
         maven { url "http://repo.spring.io/milestone" }
+        maven { url "https://plugins.gradle.org/m2" }
     }
     dependencies {
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.0.1"
+//        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.0.1"
         classpath "org.springframework.boot:spring-boot-gradle-plugin:1.3.5.RELEASE"
+        classpath "io.franzbecker:gradle-lombok:1.6"
+        classpath "org.projectlombok:lombok:1.16.8"
     }
 }
 
 apply plugin: 'java'
-apply plugin: 'kotlin'
+//apply plugin: 'kotlin'
 apply plugin: 'spring-boot'
+apply plugin: 'io.franzbecker.gradle-lombok'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -37,11 +41,16 @@ dependencies {
     compile "org.springframework.boot:spring-boot-starter:1.3.5.RELEASE"
     compile "org.springframework.boot:spring-boot-starter-web:1.3.5.RELEASE"
     compile "org.springframework.boot:spring-boot-starter-websocket:1.3.5.RELEASE"
+    compile "org.springframework.boot:spring-boot-starter-data-jpa:1.3.5.RELEASE"
     compile "org.springframework.boot:spring-boot-gradle-plugin:1.3.5.RELEASE"
     compile "com.google.guava:guava:19.0"
     compile "com.google.code.gson:gson:2.6.2"
     compile "org.webjars:jquery:3.0.0"
-    provided "org.projectlombok:lombok:1.16.8"
+    compile "com.h2database:h2:1.4.192"
+//    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.7.5"
+//    compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.7.5"
+//    compile "com.fasterxml.jackson.datatype:jackson-datatype-hibernate4:2.7.5"
+//    compile "org.projectlombok:lombok:1.16.8"
 //    runtime "org.springframework.boot:spring-boot-starter-tomcat"
     testCompile group: 'junit', name: 'junit', version: '4.11'
     testCompile "org.springframework.boot:spring-boot-starter-test:1.3.5.RELEASE"

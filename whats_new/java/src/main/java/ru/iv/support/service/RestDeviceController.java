@@ -12,21 +12,27 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import ru.iv.support.DeviceController;
+import ru.iv.support.DeviceInfo;
 import ru.iv.support.Event;
 import ru.iv.support.WebDeviceController;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @SuppressWarnings("unused")
 @RestController("deviceController")
 final class RestDeviceController {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private final AtomicBoolean isRunnableEvents = new AtomicBoolean(true);
+
     @Autowired
     @Qualifier("defaultTaskExecutor")
     private TaskExecutor executor;
@@ -44,6 +50,12 @@ final class RestDeviceController {
         return CharStreams.toString(new InputStreamReader(resource.openStream()));
     }
 
+    @RequestMapping(path = "/devices", produces = MediaType.APPLICATION_JSON_UTF8_VALUE, method = RequestMethod.GET)
+    @ResponseBody
+    public Set<DeviceInfo> devices() throws IOException, URISyntaxException {
+        return deviceController.listDevices();
+    }
+
     @RequestMapping(path = "/", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
     public String index() throws IOException {
         final URL resource = RestDeviceController.class.getResource("/public/index.html");
@@ -51,9 +63,9 @@ final class RestDeviceController {
     }
 
     @PostConstruct
-    private void init() {
+    private void construct() {
         executor.execute(() -> {
-            while (true) {
+            while (isRunnableEvents.get()) {
                 final Event event = next(deviceController.events());
                 if (event != null) {
                     final String message = GSON.toJson(event, Event.class);
@@ -62,6 +74,11 @@ final class RestDeviceController {
                 }
             }
         });
+    }
+
+    @PreDestroy
+    private void destroy() {
+        isRunnableEvents.set(false);
     }
 
     private static Event next(BlockingQueue<Event> events) {

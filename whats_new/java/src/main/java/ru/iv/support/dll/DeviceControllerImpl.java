@@ -1,23 +1,28 @@
 package ru.iv.support.dll;
 
-import lombok.extern.slf4j.Slf4j;
+import com.google.common.collect.Sets;
 import org.springframework.stereotype.Service;
 import ru.iv.support.*;
 
 import javax.annotation.PostConstruct;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
+@SuppressWarnings("unused")
 @Service
-@Slf4j
 final class DeviceControllerImpl implements DeviceController, Callback {
     private final BlockingQueue<Event> events = new LinkedBlockingQueue<>(1000);
-
+    private final Set<DeviceInfo> devices = Sets.newConcurrentHashSet();
 
     @PostConstruct
     private void init() {
         Library.register(this);
+    }
+
+    @Override
+    public Set<DeviceInfo> listDevices() {
+        return devices;
     }
 
     @Override
@@ -37,12 +42,18 @@ final class DeviceControllerImpl implements DeviceController, Callback {
 
     @Override
     public void connected(int device, int firmware) {
-        events.add(new Event(Device.valueOf(device), Firmware.valueOf(firmware), Event.Type.CONNECTED));
+        final Device deviceOf = Device.valueOf(device);
+        final Firmware firmwareOf = Firmware.valueOf(firmware);
+        events.add(new Event(deviceOf, firmwareOf, Event.Type.CONNECTED));
+        devices.add(new DeviceInfo(deviceOf, firmwareOf));
     }
 
     @Override
     public void disconnected(int device, int firmware) {
-        events.add(new Event(Device.valueOf(device), Firmware.valueOf(firmware), Event.Type.DISCONNECTED));
+        final Device deviceOf = Device.valueOf(device);
+        final Firmware firmwareOf = Firmware.valueOf(firmware);
+        events.add(new Event(deviceOf, firmwareOf, Event.Type.DISCONNECTED));
+        devices.remove(new DeviceInfo(deviceOf, firmwareOf));
     }
 
     @Override
@@ -50,27 +61,5 @@ final class DeviceControllerImpl implements DeviceController, Callback {
         final Packet[] newPackets = new Packet[count];
         System.arraycopy(packets, 0, newPackets, 0, count);
         events.add(new Event(Device.valueOf(device), Firmware.valueOf(firmware), newPackets));
-    }
-
-    public static void main(String[] args) {
-        final DeviceControllerImpl controller = new DeviceControllerImpl();
-        controller.init();
-        final BlockingQueue<Event> events = controller.events();
-        new Thread(() -> {
-            while (true) {
-                final Event event = next(events);
-                if (event != null) {
-                    System.out.println(event);
-                }
-            }
-        }).start();
-    }
-
-    private static Event next(BlockingQueue<Event> events) {
-        try {
-            return events.poll(1000, TimeUnit.MILLISECONDS);
-        } catch (Exception ex) {
-            return null;
-        }
     }
 }

@@ -2,7 +2,7 @@ package ru.iv.support.dll;
 
 import ru.iv.support.Packet;
 
-public interface Callback {
+interface Callback {
 
     void connected(int device, int firmware);
 

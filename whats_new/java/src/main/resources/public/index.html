@@ -7,18 +7,6 @@
 
     <script language="javascript" type="text/javascript">
 
-        var DEVICE_CONNECT           = 0x00000002;
-        var DEVICE_DISCONNECT        = 0x00000004;
-        var DEVICE_RECEIVE           = 0x00000008;
-        var DEVICE_SENT              = 0x00000010;
-        var DEVICE_HID               = 0x00000020;
-        var DEVICE_FTDI              = 0x00000040;
-        var FIRMWARE_42              = 0x00000080;
-        var FIRMWARE_60              = 0x00000100;
-        var CLOSE                    = 0x00000000;
-        var START                    = 0x00000001;
-
-        var rooms = [];
         var ws = new WebSocket('ws://' + location.host + '/ws');
 
         if (!window.console) { window.console = { log: function() {} } };
@@ -28,39 +16,19 @@
         ws.onclose = function(ev) { console.log(ev); };
         ws.onmessage = function(ev) {
             console.log(ev);
-
-            var array = JSON.parse(ev.data);
-            array.forEach(function(item, i, arr) {
-                var div = document.createElement('div');
-                div.innerHTML = '';
-
-
-                if ( (item[1] & DEVICE_HID) == DEVICE_HID ) {
-                    div.innerHTML += 'HID  ';
-                } else if ( (item[1] & DEVICE_FTDI) == DEVICE_FTDI ) {
-                    div.innerHTML += 'FTDI ';
-                }
-
-                if ( (item[1] & DEVICE_CONNECT) == DEVICE_CONNECT ) {
-                    div.innerHTML += 'CONNECT';
-                } else if ( (item[1] & DEVICE_DISCONNECT) == DEVICE_DISCONNECT ) {
-                    div.innerHTML += 'DISCONNECT';
-                } else if ( (item[1] & DEVICE_RECEIVE) == DEVICE_RECEIVE ) {
-                    div.innerHTML += 'RECEIVE[';
-                    var bt    = (item[2] >> 24) & 0x00ff;
-                    var fw    = (item[2] >> 16) & 0x00ff;
-                    var group = (item[2] >>  8) & 0x00ff;
-                    var index = (item[2]      ) & 0x00ff;
-                    div.innerHTML += 'BT: ' + bt;
-                    div.innerHTML += ', FW: ' + fw;
-                    div.innerHTML += ', GR: ' + group;
-                    div.innerHTML += ', ID: ' + index;
-                    div.innerHTML += ']';
-                } else if ( (item[1] & DEVICE_SENT) == DEVICE_SENT ) {
-                    div.innerHTML += 'SENT';
-                }
-                document.getElementById('events').appendChild(div);
-            });
+            var event = JSON.parse(ev.data);
+            var div = document.createElement('div');
+            div.innerHTML = '';
+            div.innerHTML += 'Device: ' + event.device + ", Firmware: " + event.firmware + ", Type: " + event.type;
+            document.getElementById('events').appendChild(div);
+            if (event.type === 'PACKETS') {
+                event.packets.forEach(function(item, i, arr) {
+                    div = document.createElement('div');
+                    div.innerHTML = '';
+                    div.innerHTML += '[' + item.group + ', ' + item.index + ', ' + item.battery + ', ' + item.timeout + ', ' + item.enter + "]";
+                    document.getElementById('events').appendChild(div);
+                });
+            }
         };
 
         window.onload = function() {
