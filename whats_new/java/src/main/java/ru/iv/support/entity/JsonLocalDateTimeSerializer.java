@@ -1,4 +1,4 @@
-package ru.iv.support.service;
+package ru.iv.support.entity;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @Component
-public final class JsonLocalDateTimeSerializer extends JsonSerializer<LocalDateTime> {
+final class JsonLocalDateTimeSerializer extends JsonSerializer<LocalDateTime> {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     @Override

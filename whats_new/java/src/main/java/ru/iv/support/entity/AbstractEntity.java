@@ -10,7 +10,6 @@ import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.format.annotation.DateTimeFormat;
-import ru.iv.support.service.JsonLocalDateTimeSerializer;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;

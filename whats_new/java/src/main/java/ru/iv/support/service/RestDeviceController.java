@@ -7,14 +7,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.http.MediaType;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import ru.iv.support.DeviceController;
-import ru.iv.support.DeviceInfo;
-import ru.iv.support.Event;
-import ru.iv.support.WebDeviceController;
+import ru.iv.support.*;
+import ru.iv.support.entity.Session;
+import ru.iv.support.repository.EventRepository;
+import ru.iv.support.repository.SessionRepository;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -32,6 +33,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 final class RestDeviceController {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private final AtomicBoolean isRunnableEvents = new AtomicBoolean(true);
+
+
+    @Autowired
+    private SessionRepository sessionRepository;
+
+    @Autowired
+    private EventRepository eventRepository;
 
     @Autowired
     @Qualifier("defaultTaskExecutor")
@@ -71,9 +79,25 @@ final class RestDeviceController {
                     final String message = GSON.toJson(event, Event.class);
                     webController.broadcast(message);
                     System.out.println(event);
+                    if (event.type == Event.Type.PACKETS) {
+                        saveEvent(event);
+                    }
                 }
             }
         });
+    }
+
+    @Transactional
+    private void saveEvent(Event event) {
+        Session activate = sessionRepository.findByActivate(true);
+        if (activate == null) {
+            activate = sessionRepository.findByName(Session.DEFAULT_NAME);
+        }
+        for (Packet packet : event.packets) {
+            final ru.iv.support.entity.Event ev =
+                    ru.iv.support.entity.Event.of(activate, event.device, event.firmware, packet);
+            eventRepository.save(ev);
+        }
     }
 
     @PreDestroy

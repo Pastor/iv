@@ -123,7 +123,6 @@ final class RestProcessController {
     @PostConstruct
     @Transactional
     private void init() {
-
         final Session defaultSession = sessionRepository.findByName(Session.DEFAULT_NAME);
         if (defaultSession == null) {
             final Session session = new Session();
@@ -131,20 +130,5 @@ final class RestProcessController {
             sessionRepository.save(session);
         }
         sessionRepository.clearActivated();
-
-        for (int i = 0; i < 10; i++) {
-            final Profile profile = new Profile();
-            profile.setName("Name " + i);
-            profileRepository.save(profile);
-            for (int j = 0; j < 10; j++) {
-                final Session session = new Session();
-                session.setProfile(profile);
-                sessionRepository.save(session);
-                final Event event = new Event();
-                event.setName("Name " + session.getId() + ":" + profile.getId());
-                event.setSession(session);
-                eventRepository.save(event);
-            }
-        }
     }
 }
