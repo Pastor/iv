@@ -73,8 +73,17 @@ final class RestProcessController {
 
     @RequestMapping(path = "/sessions/{id}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE, method = RequestMethod.GET)
     @ResponseBody
-    private Session listSessions(@PathVariable("id") long id) {
+    private Session getSession(@PathVariable("id") long id) {
         return sessionRepository.findOne(id);
+    }
+
+    @RequestMapping(path = "/sessions/current", produces = MediaType.APPLICATION_JSON_UTF8_VALUE, method = RequestMethod.GET)
+    @ResponseBody
+    private Session currentSession() {
+        final Session activate = sessionRepository.findByActivate(true);
+        if (activate == null)
+            return sessionRepository.findByName(Session.DEFAULT_NAME);
+        return activate;
     }
 
     @RequestMapping(path = "/sessions/create", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, method = RequestMethod.POST)
@@ -92,6 +101,17 @@ final class RestProcessController {
         sessionRepository.clearActivated();
         session.setActivate(true);
         sessionRepository.save(session);
+    }
+
+    @RequestMapping(path = "/sessions/start/{idProfile}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE, method = RequestMethod.PUT)
+    @ResponseBody
+    @Transactional
+    private Session startSession(@PathVariable("idProfile") long idProfile) {
+        sessionRepository.clearActivated();
+        Session session = new Session();
+        session.setProfile(profileRepository.findOne(idProfile));
+        session.setActivate(true);
+        return sessionRepository.save(session);
     }
 
     @RequestMapping(path = "/sessions/deactivate", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, method = RequestMethod.PUT)
