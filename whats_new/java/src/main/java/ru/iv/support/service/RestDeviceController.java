@@ -12,9 +12,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import ru.iv.support.*;
+import ru.iv.support.DeviceController;
+import ru.iv.support.DeviceInfo;
+import ru.iv.support.Event;
+import ru.iv.support.Packet;
 import ru.iv.support.entity.Answer;
 import ru.iv.support.entity.QuestionResult;
+import ru.iv.support.notify.Notify;
+import ru.iv.support.notify.WebNotifyController;
 import ru.iv.support.repository.AnswerRepository;
 import ru.iv.support.repository.ResultRepository;
 
@@ -59,10 +64,11 @@ final class RestDeviceController {
         return CharStreams.toString(new InputStreamReader(resource.openStream()));
     }
 
-    @RequestMapping(path = "/devices", produces = MediaType.APPLICATION_JSON_UTF8_VALUE, method = RequestMethod.GET)
+    @RequestMapping(path = "/devices/list", produces = MediaType.APPLICATION_JSON_UTF8_VALUE, method = RequestMethod.GET)
     @ResponseBody
-    public Set<DeviceInfo> devices() throws IOException, URISyntaxException {
-        return deviceController.listDevices();
+    public String devices() throws IOException, URISyntaxException {
+        final Set<DeviceInfo> devices = deviceController.listDevices();
+        return GSON.toJson(devices.toArray(new DeviceInfo[devices.size()]), DeviceInfo[].class);
     }
 
     @RequestMapping(path = "/", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
@@ -77,12 +83,10 @@ final class RestDeviceController {
             while (isRunnableEvents.get()) {
                 final Event event = next(deviceController.events());
                 if (event != null) {
-                    final String message = GSON.toJson(event, Event.class);
-                    webController.broadcast(message);
-                    System.out.println(event);
                     if (event.type == Event.Type.PACKETS) {
                         saveEvent(event);
                     }
+                    webController.notify(Notify.of(event));
                 }
             }
         });

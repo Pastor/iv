@@ -3,12 +3,15 @@ package ru.iv.support;
 import java.util.Objects;
 
 public final class DeviceInfo {
-    private final Device device;
-    private final Firmware firmware;
+    private Device device;
+    private Firmware firmware;
 
     public DeviceInfo(Device device, Firmware firmware) {
         this.device = device;
         this.firmware = firmware;
+    }
+
+    public DeviceInfo() {
     }
 
     @Override

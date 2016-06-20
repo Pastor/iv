@@ -12,7 +12,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
-import ru.iv.support.WebNotifyController;
+import ru.iv.support.notify.WebNotifyController;
 import ru.iv.support.entity.Answer;
 import ru.iv.support.entity.Question;
 import ru.iv.support.entity.QuestionResult;

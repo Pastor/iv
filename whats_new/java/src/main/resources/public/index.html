@@ -19,16 +19,16 @@
             var event = JSON.parse(ev.data);
             var div = document.createElement('div');
             div.innerHTML = '';
-            div.innerHTML += 'Device: ' + event.device + ", Firmware: " + event.firmware + ", Type: " + event.type;
+            div.innerHTML += ev.data;
             document.getElementById('events').appendChild(div);
-            if (event.type === 'PACKETS') {
-                event.packets.forEach(function(item, i, arr) {
-                    div = document.createElement('div');
-                    div.innerHTML = '';
-                    div.innerHTML += '[' + item.group + ', ' + item.index + ', ' + item.battery + ', ' + item.timeout + ', ' + item.enter + "]";
-                    document.getElementById('events').appendChild(div);
-                });
-            }
+//            if (event.packets !== 'undefined') {
+//                event.packets.forEach(function(item, i, arr) {
+//                    div = document.createElement('div');
+//                    div.innerHTML = '';
+//                    div.innerHTML += '[' + item.group + ', ' + item.index + ', ' + item.battery + ', ' + item.timeout + ', ' + item.enter + "]";
+//                    document.getElementById('events').appendChild(div);
+//                });
+//            }
         };
 
         window.onload = function() {

@@ -7,7 +7,8 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
-import ru.iv.support.WebNotifyController;
+import ru.iv.support.notify.Notify;
+import ru.iv.support.notify.WebNotifyController;
 
 import java.io.IOException;
 import java.util.Set;
@@ -50,5 +51,10 @@ final class WebNotifyControllerImpl extends TextWebSocketHandler implements WebN
                 sessions.remove(session);
             }
         }
+    }
+
+    @Override
+    public void notify(Notify notify) {
+        broadcast(notify.toString());
     }
 }
