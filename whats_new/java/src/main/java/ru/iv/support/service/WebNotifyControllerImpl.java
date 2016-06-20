@@ -7,14 +7,15 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
-import ru.iv.support.WebDeviceController;
+import ru.iv.support.WebNotifyController;
 
 import java.io.IOException;
 import java.util.Set;
 
+@SuppressWarnings("unused")
 @Service
 @Slf4j
-final class WebDeviceControllerImpl extends TextWebSocketHandler implements WebDeviceController {
+final class WebNotifyControllerImpl extends TextWebSocketHandler implements WebNotifyController {
 
     private final Set<WebSocketSession> sessions = Sets.newConcurrentHashSet();
 

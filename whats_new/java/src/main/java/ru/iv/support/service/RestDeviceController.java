@@ -13,9 +13,10 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import ru.iv.support.*;
-import ru.iv.support.entity.Session;
-import ru.iv.support.repository.EventRepository;
-import ru.iv.support.repository.SessionRepository;
+import ru.iv.support.entity.Answer;
+import ru.iv.support.entity.QuestionResult;
+import ru.iv.support.repository.AnswerRepository;
+import ru.iv.support.repository.ResultRepository;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -36,10 +37,10 @@ final class RestDeviceController {
 
 
     @Autowired
-    private SessionRepository sessionRepository;
+    private ResultRepository resultRepository;
 
     @Autowired
-    private EventRepository eventRepository;
+    private AnswerRepository answerRepository;
 
     @Autowired
     @Qualifier("defaultTaskExecutor")
@@ -49,7 +50,7 @@ final class RestDeviceController {
     private DeviceController deviceController;
 
     @Autowired
-    private WebDeviceController webController;
+    private WebNotifyController webController;
 
     @RequestMapping(path = "/version", produces = MediaType.APPLICATION_JSON_UTF8_VALUE, method = RequestMethod.GET)
     @ResponseBody
@@ -89,14 +90,14 @@ final class RestDeviceController {
 
     @Transactional
     private void saveEvent(Event event) {
-        Session activate = sessionRepository.findByActivate(true);
+        QuestionResult activate = resultRepository.findByActivate(true);
         if (activate == null) {
-            activate = sessionRepository.findByName(Session.DEFAULT_NAME);
+            activate = resultRepository.findByName(QuestionResult.DEFAULT_NAME);
         }
         for (Packet packet : event.packets) {
-            final ru.iv.support.entity.Event ev =
-                    ru.iv.support.entity.Event.of(activate, event.device, event.firmware, packet);
-            eventRepository.save(ev);
+            final Answer ev =
+                    Answer.of(activate, event.device, event.firmware, packet);
+            answerRepository.save(ev);
         }
     }
 

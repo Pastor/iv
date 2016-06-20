@@ -12,11 +12,11 @@ import ru.iv.support.Packet;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "Event")
+@Table(name = "Answer")
 @Data
 @EqualsAndHashCode(callSuper = true)
 @RequiredArgsConstructor
-public final class Event extends AbstractEntity {
+public final class Answer extends AbstractEntity {
     @Column(name = "device", nullable = false)
     private Integer device;
     @Column(name = "firmware", nullable = false)
@@ -35,21 +35,21 @@ public final class Event extends AbstractEntity {
     private String enter;
 
     @JsonIgnore
-    @PrimaryKeyJoinColumn(name = "session_id", referencedColumnName = "id")
+    @PrimaryKeyJoinColumn(name = "result_id", referencedColumnName = "id")
     @ManyToOne(fetch = FetchType.LAZY, optional = false, cascade = CascadeType.REMOVE)
-    private Session session;
+    private QuestionResult questionResult;
 
 
-    public static Event of(Session session, Device device, Firmware firmware, Packet packet) {
-        final Event event = new Event();
-        event.setSession(session);
-        event.setDevice(device.ordinal());
-        event.setFirmware(firmware.ordinal());
-        event.setGroup(packet.group);
-        event.setIndex(packet.index);
-        event.setBattery(packet.battery);
-        event.setTimeout(packet.timeout);
-        event.setEnter(packet.enter);
-        return event;
+    public static Answer of(QuestionResult questionResult, Device device, Firmware firmware, Packet packet) {
+        final Answer answer = new Answer();
+        answer.setQuestionResult(questionResult);
+        answer.setDevice(device.ordinal());
+        answer.setFirmware(firmware.ordinal());
+        answer.setGroup(packet.group);
+        answer.setIndex(packet.index);
+        answer.setBattery(packet.battery);
+        answer.setTimeout(packet.timeout);
+        answer.setEnter(packet.enter);
+        return answer;
     }
 }

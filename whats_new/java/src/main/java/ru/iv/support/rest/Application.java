@@ -29,11 +29,10 @@ import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 import org.springframework.web.socket.server.support.DefaultHandshakeHandler;
-import ru.iv.support.WebDeviceController;
+import ru.iv.support.WebNotifyController;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Properties;
 
@@ -60,7 +59,7 @@ public class Application implements WebSocketConfigurer {
     private static final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
 
     @Autowired
-    private WebDeviceController webController;
+    private WebNotifyController webController;
 
     @Bean
     @Primary
@@ -68,7 +67,7 @@ public class Application implements WebSocketConfigurer {
         final DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setDriverClassName(Driver.class.getName());
         dataSource.setUsername("sa");
-        final String url = "jdbc:h2:file:~/" + formatter.format(LocalDate.now());
+        final String url = "jdbc:h2:file:~/" + "support"/*formatter.format(LocalDate.now())*/;
         log.debug("Url: {}", url);
         dataSource.setUrl(url);
         return dataSource;
@@ -120,6 +119,6 @@ public class Application implements WebSocketConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(webController, "/ws").setHandshakeHandler(new DefaultHandshakeHandler());
+        registry.addHandler(webController, "/notification").setHandshakeHandler(new DefaultHandshakeHandler());
     }
 }
