@@ -4,10 +4,7 @@ import ru.iv.support.Event;
 
 @SuppressWarnings({"unused", "FieldCanBeLocal"})
 final class StatusNotify extends DeviceNotify {
-    private final Event.Type type;
-
     StatusNotify(Event event) {
-        super(event);
-        this.type = event.type;
+        super(event.type == Event.Type.CONNECTED ? Type.DEVICE_CONNECTED : Type.DEVICE_DISCONNECTED, event);
     }
 }

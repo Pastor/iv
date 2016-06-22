@@ -28,14 +28,12 @@ public final class Question extends AbstractEntity {
     @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
     private QuestionSequence sequence;
 
-    @JsonIgnore
     @Setter(AccessLevel.NONE)
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("id")
     private Set<QuestionResult> results;
 
     @Size(min = 1, message = "Ответы на вопрос")
-    @JsonIgnore
     @Setter(AccessLevel.NONE)
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("id")

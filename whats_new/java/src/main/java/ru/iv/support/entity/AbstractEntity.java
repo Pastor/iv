@@ -1,6 +1,7 @@
 package ru.iv.support.entity;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AccessLevel;
@@ -25,6 +26,7 @@ abstract class AbstractEntity {
     @Getter
     private Long id;
 
+//    @JsonIgnore
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     @JsonProperty("created_at")
     @JsonSerialize(using = JsonLocalDateTimeSerializer.class)
@@ -34,6 +36,7 @@ abstract class AbstractEntity {
     @Getter
     private LocalDateTime createdAt;
 
+//    @JsonIgnore
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     @JsonProperty("updated_at")
     @JsonSerialize(using = JsonLocalDateTimeSerializer.class)

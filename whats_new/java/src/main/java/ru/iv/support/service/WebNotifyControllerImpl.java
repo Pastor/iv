@@ -12,12 +12,13 @@ import ru.iv.support.notify.WebNotifyController;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @SuppressWarnings("unused")
 @Service
 @Slf4j
 final class WebNotifyControllerImpl extends TextWebSocketHandler implements WebNotifyController {
-
+    private final AtomicBoolean onNotifyPacket = new AtomicBoolean(false);
     private final Set<WebSocketSession> sessions = Sets.newConcurrentHashSet();
 
     @Override
@@ -55,6 +56,16 @@ final class WebNotifyControllerImpl extends TextWebSocketHandler implements WebN
 
     @Override
     public void notify(Notify notify) {
-        broadcast(notify.toString());
+        if (notify.type == Notify.Type.DEVICE_RECEIVE) {
+            if (onNotifyPacket.get())
+                broadcast(notify.toString());
+        } else {
+            broadcast(notify.toString());
+        }
+    }
+
+    @Override
+    public void setNotifyPacket(boolean value) {
+        onNotifyPacket.set(value);
     }
 }

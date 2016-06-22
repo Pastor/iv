@@ -1,60 +1,52 @@
 package ru.iv.support.service;
 
-import com.google.common.base.Stopwatch;
 import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.AdviceMode;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
+import ru.iv.support.entity.*;
 import ru.iv.support.notify.WebNotifyController;
-import ru.iv.support.entity.Answer;
-import ru.iv.support.entity.Question;
-import ru.iv.support.entity.QuestionResult;
-import ru.iv.support.entity.QuestionSequence;
-import ru.iv.support.repository.AnswerRepository;
-import ru.iv.support.repository.QuestionRepository;
-import ru.iv.support.repository.QuestionSequenceRepository;
-import ru.iv.support.repository.ResultRepository;
+import ru.iv.support.repository.*;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
-import static java.text.MessageFormat.format;
 
 @Slf4j
 @SuppressWarnings("unused")
 @RestController("restProcessController")
 final class RestProcessController {
 
-    private final Lock stopLock = new ReentrantLock();
-    private final Condition stopSignal = stopLock.newCondition();
-    private final AtomicBoolean isQuestionRunning = new AtomicBoolean(false);
-
     private final QuestionRepository questionRepository;
     private final ResultRepository resultRepository;
     private final AnswerRepository answerRepository;
     private final QuestionSequenceRepository sequenceRepository;
+    private final QuestionChoiceRepository choiceRepository;
 
     @Autowired
     private WebNotifyController notifyController;
 
     @Autowired
+    private QuestionController questionController;
+
+    @Autowired
+    private ResultController resultController;
+
+    @Autowired
     private RestProcessController(QuestionRepository questionRepository,
                                   ResultRepository resultRepository,
                                   AnswerRepository answerRepository,
-                                  QuestionSequenceRepository sequenceRepository) {
+                                  QuestionSequenceRepository sequenceRepository,
+                                  QuestionChoiceRepository choiceRepository) {
+        this.choiceRepository = choiceRepository;
         Assert.notNull(resultRepository);
         this.resultRepository = resultRepository;
         Assert.notNull(answerRepository);
@@ -137,7 +129,7 @@ final class RestProcessController {
     @ResponseBody
     @Transactional
     private void activateResult(@PathVariable("id") long idSession) {
-        Assert.isTrue(!isQuestionRunning.get(), "Уже запузен проуесс голосования");
+        Assert.isTrue(!questionController.isStarted(), "Уже запузен проуесс голосования");
         final QuestionResult questionResult = resultRepository.findOne(idSession);
         resultRepository.clearActivated();
         questionResult.setActivate(true);
@@ -155,7 +147,7 @@ final class RestProcessController {
     @RequestMapping(path = "/results/stop", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, method = RequestMethod.PUT)
     @ResponseBody
     private void stopResult() {
-        stopSignal();
+        questionController.stop();
     }
 
     @RequestMapping(path = "/answer/{idResult}/list", produces = MediaType.APPLICATION_JSON_UTF8_VALUE, method = RequestMethod.GET)
@@ -187,59 +179,10 @@ final class RestProcessController {
             timeCount = Long.MAX_VALUE;
         }
         final QuestionResult save = resultRepository.save(questionResult);
-        startAsyncResult(questionResult, timeCount);
+        questionController.start(questionResult, timeCount);
         return save;
     }
 
-    @Transactional
-    @Async
-    private void startAsyncResult(QuestionResult questionResult, long timeCount) {
-        stopLock.lock();
-        try {
-            final Stopwatch stopwatch = Stopwatch.createStarted();
-            while (isQuestionRunning.get()) {
-                if (waitSignal())
-                    continue;
-                final long elapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
-                if (elapsed >= timeCount) {
-                    isQuestionRunning.set(false);
-                } else {
-                    tickUpdate(elapsed);
-                }
-            }
-        } finally {
-            stopLock.unlock();
-        }
-        questionResult.setStoppedAt(LocalDateTime.now());
-        questionResult.setActivate(false);
-        resultRepository.save(questionResult);
-        resultRepository.clearActivated();
-        /**TODO: Notify */
-        notifyController.broadcast("Stop");
-    }
-
-    private void tickUpdate(long elapsed) {
-        /**TODO: Notify */
-        notifyController.broadcast(format("Elapsed: {} ms", elapsed));
-    }
-
-    private boolean waitSignal() {
-        try {
-            return stopSignal.await(5000, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            return false;
-        }
-    }
-
-    private void stopSignal() {
-        stopLock.lock();
-        try {
-            isQuestionRunning.set(false);
-            stopSignal.signalAll();
-        } finally {
-            stopLock.unlock();
-        }
-    }
 
     @PostConstruct
     @Transactional
@@ -257,7 +200,41 @@ final class RestProcessController {
             questionResult.setQuestion(question);
             questionResult.setName(QuestionResult.DEFAULT_NAME);
             resultRepository.save(questionResult);
+            createTests();
         }
         resultRepository.clearActivated();
+        resultController.complete();
+    }
+
+    private void createTests() {
+        final QuestionSequence sequence = new QuestionSequence();
+        sequence.setName("Ткстовая последовательность");
+        sequenceRepository.save(sequence);
+        final Question question = new Question();
+        question.setSequence(sequence);
+        question.setText("Главный вопрос");
+        question.setTimeCount((long) 30000);
+        questionRepository.save(question);
+        final QuestionChoice choice1 = new QuestionChoice();
+        choice1.setQuestion(question);
+        choice1.setText("Вопрос №1");
+        choice1.setOrder(1);
+        choice1.setShowEnter("1");
+        choice1.setDeviceEnter("1");
+        choiceRepository.save(choice1);
+        final QuestionChoice choice2 = new QuestionChoice();
+        choice2.setQuestion(question);
+        choice2.setText("Вопрос №2");
+        choice2.setOrder(2);
+        choice2.setShowEnter("2");
+        choice2.setDeviceEnter("2");
+        choiceRepository.save(choice2);
+        final QuestionChoice choice3 = new QuestionChoice();
+        choice3.setQuestion(question);
+        choice3.setText("Вопрос №3");
+        choice3.setOrder(3);
+        choice3.setShowEnter("3");
+        choice3.setDeviceEnter("3");
+        choiceRepository.save(choice3);
     }
 }

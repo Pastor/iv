@@ -19,6 +19,7 @@ import java.util.Set;
 public final class QuestionResult extends AbstractEntity {
     public static final String DEFAULT_NAME = "default";
 
+    @JsonIgnore
     @NotNull
     @PrimaryKeyJoinColumn(name = "question_id", referencedColumnName = "id")
     @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
@@ -26,7 +27,7 @@ public final class QuestionResult extends AbstractEntity {
 
     @JsonIgnore
     @Setter(AccessLevel.NONE)
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "questionResult", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "questionResult", cascade = CascadeType.ALL)
     @OrderBy("id")
     private Set<Answer> answers;
 

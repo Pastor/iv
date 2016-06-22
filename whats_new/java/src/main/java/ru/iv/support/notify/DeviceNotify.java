@@ -9,7 +9,8 @@ abstract class DeviceNotify extends Notify {
     private final Device device;
     private final Firmware firmware;
 
-    DeviceNotify(Event event) {
+    DeviceNotify(Type type, Event event) {
+        super(type);
         this.device = event.device;
         this.firmware = event.firmware;
     }

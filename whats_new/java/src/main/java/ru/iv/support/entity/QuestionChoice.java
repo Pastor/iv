@@ -1,5 +1,6 @@
 package ru.iv.support.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public final class QuestionChoice extends AbstractEntity {
     @Column(name = "show_enter", nullable = false)
     private String showEnter;
 
+    @JsonIgnore
     @NotNull
     @PrimaryKeyJoinColumn(name = "question_id", referencedColumnName = "id")
     @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)

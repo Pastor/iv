@@ -8,7 +8,7 @@ final class PacketsNotify extends DeviceNotify {
     private final Packet[] packets;
 
     PacketsNotify(Event event) {
-        super(event);
+        super(Type.DEVICE_RECEIVE, event);
         this.packets = event.packets;
     }
 }

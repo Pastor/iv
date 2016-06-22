@@ -109,8 +109,13 @@ public class Application implements WebSocketConfigurer {
         return transactionManager;
     }
 
-    @Bean(name = "defaultTaskExecutor")
-    public TaskExecutor getTaskExecutor() {
+    @Bean(name = "questionTaskExecutor")
+    public TaskExecutor getQuestionTaskExecutor() {
+        return new SimpleAsyncTaskExecutor();
+    }
+
+    @Bean(name = "deviceTaskExecutor")
+    public TaskExecutor getDeviceTaskExecutor() {
         return new SimpleAsyncTaskExecutor();
     }
 

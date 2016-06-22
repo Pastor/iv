@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.http.MediaType;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -15,9 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.iv.support.DeviceController;
 import ru.iv.support.DeviceInfo;
 import ru.iv.support.Event;
-import ru.iv.support.Packet;
-import ru.iv.support.entity.Answer;
-import ru.iv.support.entity.QuestionResult;
 import ru.iv.support.notify.Notify;
 import ru.iv.support.notify.WebNotifyController;
 import ru.iv.support.repository.AnswerRepository;
@@ -48,7 +44,10 @@ final class RestDeviceController {
     private AnswerRepository answerRepository;
 
     @Autowired
-    @Qualifier("defaultTaskExecutor")
+    private ResultController resultController;
+
+    @Autowired
+    @Qualifier("deviceTaskExecutor")
     private TaskExecutor executor;
 
     @Autowired
@@ -84,25 +83,12 @@ final class RestDeviceController {
                 final Event event = next(deviceController.events());
                 if (event != null) {
                     if (event.type == Event.Type.PACKETS) {
-                        saveEvent(event);
+                        resultController.process(event.device, event.firmware, event.packets);
                     }
                     webController.notify(Notify.of(event));
                 }
             }
         });
-    }
-
-    @Transactional
-    private void saveEvent(Event event) {
-        QuestionResult activate = resultRepository.findByActivate(true);
-        if (activate == null) {
-            activate = resultRepository.findByName(QuestionResult.DEFAULT_NAME);
-        }
-        for (Packet packet : event.packets) {
-            final Answer ev =
-                    Answer.of(activate, event.device, event.firmware, packet);
-            answerRepository.save(ev);
-        }
     }
 
     @PreDestroy
