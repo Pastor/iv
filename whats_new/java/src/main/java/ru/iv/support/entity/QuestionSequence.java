@@ -9,7 +9,7 @@ import java.util.List;
 @Entity
 @Table(name = "QuestionSequence")
 @Data
-@EqualsAndHashCode(callSuper = true, exclude = {"questions"})
+@EqualsAndHashCode(callSuper = true, exclude = {"questions", "requestGroups"})
 @RequiredArgsConstructor
 public final class QuestionSequence extends AbstractEntity {
 
@@ -21,4 +21,9 @@ public final class QuestionSequence extends AbstractEntity {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "sequence", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("id")
     private List<Question> questions;
+
+    @Setter(AccessLevel.NONE)
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "sequence", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id")
+    private List<RequestGroup> requestGroups;
 }

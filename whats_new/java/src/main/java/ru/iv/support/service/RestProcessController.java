@@ -4,11 +4,9 @@ import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.AdviceMode;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
-import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +28,7 @@ final class RestProcessController {
     private final AnswerRepository answerRepository;
     private final QuestionSequenceRepository sequenceRepository;
     private final QuestionChoiceRepository choiceRepository;
+    private final RequestGroupRepository requestGroupRepository;
 
     @Autowired
     private WebNotifyController notifyController;
@@ -45,8 +44,10 @@ final class RestProcessController {
                                   ResultRepository resultRepository,
                                   AnswerRepository answerRepository,
                                   QuestionSequenceRepository sequenceRepository,
-                                  QuestionChoiceRepository choiceRepository) {
+                                  QuestionChoiceRepository choiceRepository,
+                                  RequestGroupRepository requestGroupRepository) {
         this.choiceRepository = choiceRepository;
+        this.requestGroupRepository = requestGroupRepository;
         Assert.notNull(resultRepository);
         this.resultRepository = resultRepository;
         Assert.notNull(answerRepository);
@@ -69,6 +70,20 @@ final class RestProcessController {
     private Set<QuestionSequence> listSequences(@RequestParam(value = "limit", defaultValue = "100") int limit) {
         return Sets.newConcurrentHashSet(sequenceRepository.findAll(
                 createPageable(limit, new Sort(Sort.Direction.ASC, "id"))));
+    }
+
+    @RequestMapping(path = "/groups/{idSequence}/create", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, method = RequestMethod.POST)
+    @ResponseBody
+    @Transactional
+    private void createRequestGroup(@PathVariable("idSequence") long idSequence, @RequestBody final RequestGroup group) {
+        final QuestionSequence sequence = sequenceRepository.findOne(idSequence);
+        group.setSequence(sequence);
+        requestGroupRepository.save(group);
+    }
+
+    @RequestMapping(path = "/groups/{idGroup}", method = RequestMethod.DELETE)
+    private void deleteRequestGroup(@PathVariable("idGroup") long idGroup) {
+        requestGroupRepository.delete(idGroup);
     }
 
     @RequestMapping(path = "/questions/{idSequence}/list", produces = MediaType.APPLICATION_JSON_UTF8_VALUE, method = RequestMethod.GET)

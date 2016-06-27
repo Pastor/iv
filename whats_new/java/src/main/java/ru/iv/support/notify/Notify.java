@@ -22,6 +22,10 @@ public abstract class Notify {
         return new StatusNotify(event);
     }
 
+    public static Notify of(long msComplete, long msFullTime) {
+        return new ProcessNotify(msComplete, msFullTime);
+    }
+
     public static Notify of(Type type) {
         return new SimpleNotify(type);
     }

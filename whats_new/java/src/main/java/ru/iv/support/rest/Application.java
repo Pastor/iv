@@ -18,6 +18,8 @@ import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import org.springframework.http.server.ServerHttpRequest;
+import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
@@ -25,15 +27,23 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import org.springframework.web.socket.WebSocketExtension;
+import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
+import org.springframework.web.socket.server.HandshakeFailureException;
+import org.springframework.web.socket.server.RequestUpgradeStrategy;
+import org.springframework.web.socket.server.standard.TomcatRequestUpgradeStrategy;
 import org.springframework.web.socket.server.support.DefaultHandshakeHandler;
 import ru.iv.support.notify.WebNotifyController;
 
 import javax.sql.DataSource;
+import java.security.Principal;
 import java.sql.SQLException;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 @EnableAutoConfiguration
@@ -125,6 +135,28 @@ public class Application implements WebSocketConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(webController, "/notification").setHandshakeHandler(new DefaultHandshakeHandler());
+        registry.addHandler(webController, "/notification").setHandshakeHandler(new DefaultHandshakeHandler(new RequestUpgradeStrategy() {
+            private final RequestUpgradeStrategy strategy = new TomcatRequestUpgradeStrategy();
+            @Override
+            public String[] getSupportedVersions() {
+                return strategy.getSupportedVersions();
+            }
+
+            @Override
+            public List<WebSocketExtension> getSupportedExtensions(ServerHttpRequest request) {
+                return strategy.getSupportedExtensions(request);
+            }
+
+            @Override
+            public void upgrade(ServerHttpRequest request,
+                                ServerHttpResponse response,
+                                String selectedProtocol,
+                                List<WebSocketExtension> selectedExtensions,
+                                Principal user,
+                                WebSocketHandler wsHandler,
+                                Map<String, Object> attributes) throws HandshakeFailureException {
+                strategy.upgrade(request, response, selectedProtocol, selectedExtensions, user, wsHandler, attributes);
+            }
+        }));
     }
 }
