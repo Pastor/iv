@@ -46,8 +46,8 @@ if (WIN32)
     if (MSVC)
         add_definitions(-D_CRT_SECURE_NO_WARNINGS)
         
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /wd4267 /wd4244 /wd4996")
-        set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   /MP /wd4267 /wd4244 /wd4996")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /LD /MP /wd4267 /wd4244 /wd4996")
+        set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   /LD /MP /wd4267 /wd4244 /wd4996")
     endif()
     
     set(LIB_Ws2_32 Ws2_32)

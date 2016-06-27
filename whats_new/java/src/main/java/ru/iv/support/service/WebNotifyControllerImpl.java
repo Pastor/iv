@@ -2,11 +2,14 @@ package ru.iv.support.service;
 
 import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import ru.iv.support.Device;
+import ru.iv.support.DeviceController;
 import ru.iv.support.notify.Notify;
 import ru.iv.support.notify.WebNotifyController;
 
@@ -18,12 +21,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Service
 @Slf4j
 final class WebNotifyControllerImpl extends TextWebSocketHandler implements WebNotifyController {
+
+    @Autowired
+    private DeviceController deviceController;
+
     private final AtomicBoolean onNotifyPacket = new AtomicBoolean(false);
     private final Set<WebSocketSession> sessions = Sets.newConcurrentHashSet();
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         log.debug(message.getPayload());
+        deviceController.send(Device.HID, "Q2D\r");
     }
 
     @Override

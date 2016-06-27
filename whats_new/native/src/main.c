@@ -8,11 +8,18 @@
 #include "device_ftdi.h"
 #include "device_hid.h"
 
+//#if defined(_DEBUG)
+
 #define DEBUG() fprintf_s(fd, "line: %d\n", __LINE__); \
                 fflush(fd);
 
 #define DEBUG_ENV(env) fprintf_s(fd, "line: %d, exception: %d\n", __LINE__, (*(env))->ExceptionCheck((env))); \
                 fflush(fd);
+
+//#else
+//#define DEBUG()
+//#define DEBUG_ENV(env)
+//#endif
 
 enum Event
 {
@@ -94,7 +101,7 @@ receive_cb(int fw, struct _Result result[100], int count, void *user)
             (*userEnv)->SetObjectField(userEnv, object, packetEnter, (*userEnv)->NewStringUTF(userEnv, result[i].enter_s));
             DEBUG_ENV(userEnv);
         }
-        (*userEnv)->CallVoidMethod(userEnv, callback, handle, 1, df.fw == FW42 ? 0 : 1, packets, (jint)count);
+        (*userEnv)->CallVoidMethod(userEnv, callback, handle, fw == 45 ? 0 : 1, fw == 45 ? 0 : 1, packets, (jint)count);
         DEBUG_ENV(userEnv);
     }
 
@@ -131,7 +138,7 @@ EventLoop(LPVOID pData)
             DEBUG();
             fflush(fd);
             if (eventEnv) {
-                (*eventEnv)->CallVoidMethod(eventEnv, callback, connected, 1, df.fw == FW42 ? 0 : 1);
+                (*eventEnv)->CallVoidMethod(eventEnv, callback, connected, 1, df.fw == FW45 ? 0 : 1);
             }
             break;
         }
@@ -141,7 +148,7 @@ EventLoop(LPVOID pData)
             fprintf(fd, "FTDI disconnected\n");
             DEBUG();
             if (eventEnv) {
-                (*eventEnv)->CallVoidMethod(eventEnv, callback, disconnected, 1, df.fw == FW42 ? 0 : 1);
+                (*eventEnv)->CallVoidMethod(eventEnv, callback, disconnected, 1, df.fw == FW45 ? 0 : 1);
             }
             break;
         }
@@ -151,7 +158,7 @@ EventLoop(LPVOID pData)
             fprintf(fd, "HID  connected\n");
             DEBUG();
             if (eventEnv) {
-                (*eventEnv)->CallVoidMethod(eventEnv, callback, connected, 0, df.fw == FW42 ? 0 : 1);
+                (*eventEnv)->CallVoidMethod(eventEnv, callback, connected, 0, df.fw == FW45 ? 0 : 1);
             }
             break;
         }
@@ -161,7 +168,7 @@ EventLoop(LPVOID pData)
             fprintf(fd, "HID  disconnected\n");
             DEBUG();
             if (eventEnv) {
-                (*eventEnv)->CallVoidMethod(eventEnv, callback, disconnected, 0, df.fw == FW42 ? 0 : 1);
+                (*eventEnv)->CallVoidMethod(eventEnv, callback, disconnected, 0, df.fw == FW45 ? 0 : 1);
             }
             break;
         }
@@ -255,9 +262,22 @@ void JNICALL Java_ru_iv_support_dll_Library_register(JNIEnv *callEnv, jclass unu
     }
 }
 
+static void
+print_buffer(FILE *fd, uint8_t *buffer, int size) 
+{
+    int i = 0;
+
+    fprintf(fd, "BUFFER: ");
+    for (i = 0; i < size; ++i) {
+        if (i > 0) fprintf(fd, ", ");
+        fprintf(fd, "%02x", buffer[i]);
+    }
+    fprintf(fd, "\n");
+}
+
 void JNICALL Java_ru_iv_support_dll_Library_send(JNIEnv *callEnv, jclass unusedJclass, jint id, jstring strCommand, jboolean unuJboolean)
 {
-    static uint8_t buffer[26];
+    uint8_t buffer[26];
     size_t len;
 
     const char *command = (*callEnv)->GetStringUTFChars(callEnv, strCommand, NULL);
@@ -268,7 +288,8 @@ void JNICALL Java_ru_iv_support_dll_Library_send(JNIEnv *callEnv, jclass unusedJ
         memcpy(buffer + 2, command, len);
         buffer[1] = len + 2;
         fw_crc_create(&buffer[2], len + 1, &buffer[len + 2]);
-        fprintf(fd, "COMMAND: %.*s\n", (int)len + 4, (const char *)buffer);
+        print_buffer(fd, buffer, len + 4);
+        //fprintf(fd, "COMMAND: %.*s\n", (int)len + 4, (const char *)buffer);
         if (id == 0) {
             device_write(&dh, buffer, len + 5);
         } else if (id == 1) {

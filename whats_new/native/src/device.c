@@ -71,7 +71,7 @@ device_receive(receive_callback cb, void *userdata, struct _Device* dev)
     //fprintf(stdout, "Receive: %s\n", (char *)evf.rx);
     if (dev->fw == FW60) {
         device_fw_read60(cb, userdata, dev, &ret);
-    } else if (dev->fw == FW42) {
+    } else if (dev->fw == FW45) {
         device_fw_read42(cb, userdata, dev, &ret);
     }
     LeaveCriticalSection(&dev->rx_sync);
@@ -198,7 +198,7 @@ void device_fw_read42(receive_callback cb, void *userdata, struct _Device* dev, 
                     }
                 }
                 if ((*ret) > 0) {
-                    (*cb)(60, result, (*ret), userdata);
+                    (*cb)(45, result, (*ret), userdata);
                 }
             } else {
                 /** Skip */

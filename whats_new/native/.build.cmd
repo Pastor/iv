@@ -3,8 +3,8 @@
 rem x64
 rem set platform="x86"
 set platform="x64"
-set buildtype=Debug
-rem set buildtype=Release
+rem set buildtype=Debug
+set buildtype=Release
 
 set PATH=%PATH%;C:\cmake\bin
 set cwd=%CD%

@@ -12,7 +12,7 @@ fw_parse(const char *fw)
     if (strncmp(fw, "I-VOTE", 6))
         return NONE;
     if (!strncmp(fw, "I-VOTE ver 4.2", 14))
-        return FW42;
+        return FW45;
     if (!strncmp(fw, "I-VOTE ver 6.0", 14))
         return FW60;
     return NONE;
@@ -26,26 +26,10 @@ fw_parse_w(const wchar_t *fw)
     if (wcsncmp(fw, L"I-VOTE", 6))
         return NONE;
     if (!wcsncmp(fw, L"I-VOTE ver 4.2", 14))
-        return FW42;
+        return FW45;
     if (!wcsncmp(fw, L"I-VOTE ver 6.0", 14))
         return FW60;
     return NONE;
-}
-
-uint8_t __inline
-from_hex(uint8_t ch)
-{
-    if (ch >= '0' && ch <= '9')
-        return ch - '0';
-    if (ch >= 'A' && ch <= 'F')
-        return ch - 'A' + 10;
-    return ch - 'a' + 10;
-}
-
-uint8_t __inline
-byte_from_hex(uint8_t hex[2])
-{
-    return (from_hex(hex[0]) * 16) + from_hex(hex[1]);
 }
 
 int
