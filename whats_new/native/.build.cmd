@@ -38,7 +38,7 @@ echo Downloader: %downloader%
 rd /s /q %cwd%\.build\support
 mkdir %cwd%\.build\support
 
-cmake %cwd% -B%cwd%\.build\support -G %generator% -DPROJECT_PLATFORM=%vcplatform% -DJAVA_HOME=C:\jdk1.8.0_65 -DCMAKE_BUILD_TYPE=%buildtype% -DCMAKE_CONFIGURATION_TYPES="Debug;Release"
+cmake %cwd% -B%cwd%\.build\support -G %generator% -DPROJECT_PLATFORM=%vcplatform% -DJAVA_HOME=C:\jdk1.8.0_91 -DCMAKE_BUILD_TYPE=%buildtype% -DCMAKE_CONFIGURATION_TYPES="Debug;Release"
 msbuild %cwd%\.build\support\support.sln /p:Platform=%vcplatform% /p:ReleaseBuild=true /p:Configuration=%buildtype%
 
 rem %zipper% a %cwd%\.build\support_%platform%.zip ^

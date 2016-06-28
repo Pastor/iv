@@ -3,10 +3,10 @@
 
 set sqlite_release=sqlite-amalgamation-3110100
 rem x64
-set platform="x86"
-rem set platform="x64"
-set buildtype=Debug
-rem set buildtype=Release
+rem set platform="x86"
+set platform="x64"
+rem set buildtype=Debug
+remset buildtype=Release
 
 set PATH=%PATH%;C:\cmake\bin
 set cwd=%CD%
