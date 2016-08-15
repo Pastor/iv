@@ -46,7 +46,9 @@ final class RestProcessController {
                                   QuestionSequenceRepository sequenceRepository,
                                   QuestionChoiceRepository choiceRepository,
                                   RequestGroupRepository requestGroupRepository) {
+        Assert.notNull(choiceRepository);
         this.choiceRepository = choiceRepository;
+        Assert.notNull(requestGroupRepository);
         this.requestGroupRepository = requestGroupRepository;
         Assert.notNull(resultRepository);
         this.resultRepository = resultRepository;
