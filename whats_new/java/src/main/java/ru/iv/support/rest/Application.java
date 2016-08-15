@@ -13,6 +13,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
@@ -58,18 +59,24 @@ import java.util.Properties;
         basePackageClasses = {},
         entityManagerFactoryRef = "emFactory",
         transactionManagerRef = "emTransactionManager")
-@ComponentScan({
-        "ru.iv.support.rest",
-        "ru.iv.support.service",
-        "ru.iv.support.dll",
-        "ru.iv.support.repository",
-})
 @Slf4j
 public class Application implements WebSocketConfigurer {
     private static final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
 
     @Autowired
     private WebNotifyController webController;
+
+    @ComponentScan({
+            "ru.iv.support.rest",
+            "ru.iv.support.service",
+            "ru.iv.support.dll",
+            "ru.iv.support.repository",
+    })
+    @Configuration
+    public static class SupportConfiguration {
+
+    }
+
 
     @Bean
     @Primary
@@ -137,6 +144,7 @@ public class Application implements WebSocketConfigurer {
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(webController, "/notification").setHandshakeHandler(new DefaultHandshakeHandler(new RequestUpgradeStrategy() {
             private final RequestUpgradeStrategy strategy = new TomcatRequestUpgradeStrategy();
+
             @Override
             public String[] getSupportedVersions() {
                 return strategy.getSupportedVersions();
