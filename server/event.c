@@ -100,19 +100,19 @@ EventLoop(LPVOID pData) {
             if (device_receive(ev->db, ev->dh)) {
                 SetEvent(ev->event);
             }
-//            i = 1;
+            i = 1;
             break;
         }
         default:
             break;
         }
-//        if (i > 0) {
-//            uint8_t d[] = { 2, 6, 'Q', '2', 'D', '\r', 0, 0 };
+        if (i > 0) {
+            uint8_t d[] = { 2, 6, 'Q', '2', 'D', '\r', 0, 0 };
 
-//            i = 0;
-//            fw_crc_create(&d[2], 4, &d[6]);
-//            device_write(ev->dh, d, sizeof(d));
-//        }
+            i = 0;
+            fw_crc_create(&d[2], 4, &d[6]);
+            device_write(ev->dh, d, sizeof(d));
+        }
     }
 
     return 0;
@@ -126,12 +126,18 @@ static DWORD WINAPI OserverHandler(LPVOID pData) {
     char events[4096];
     int len;
     int last_event = db_last_event(db);
+    char   buf[256];
+    time_t timer;
+    struct tm *cur;
 
     while (is_running) {
         switch (WaitForSingleObject(event, INFINITE)) {
         case WAIT_OBJECT_0:
         {
-            fprintf(stdout, "Event\n");
+            time(&timer);
+            cur = localtime(&timer);
+            strftime(buf, sizeof(buf), "%H:%M:%S", cur);
+            fprintf(stdout, "Event: %s\n", buf);
             last_event = db_get_events(db, last_event, events, sizeof(events), &len);
             if (last_event > 0 && len > 2) {
                 broadcast(nc, events, len);
